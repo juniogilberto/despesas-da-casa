@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="color-scheme" content="light dark">
+    <title>Despesas da Casa</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="layout" id="appLayout">
+
+    <aside class="sidebar" id="sidebar">
+        <div class="brand">
+            <div class="logo">R$</div>
+            <div>
+                <strong>Despesas da Casa</strong>
+                <small>Controle financeiro</small>
+            </div>
+        </div>
+
+        <nav>
+            <button class="nav-btn active" data-page="dashboard">
+                📊 <span>Resumo</span>
+            </button>
+
+            <button class="nav-btn" data-page="add">
+                ➕ <span>Adicionar gasto</span>
+            </button>
+
+            <button class="nav-btn" data-page="history">
+                📋 <span>Histórico</span>
+            </button>
+
+            <button class="nav-btn" data-page="settings">
+                ⚙️ <span>Configurações</span>
+            </button>
+        </nav>
+
+        <small class="sidebar-footer">
+            Dados sincronizados com sua conta.
+        </small>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main>
+
+        <header class="topbar">
+            <button class="menu-btn" id="menuBtn">☰</button>
+
+            <div class="brand mobile-brand">
+                <div class="logo">R$</div>
+                <div>
+                    <strong>Despesas da Casa</strong>
+                    <small id="today"></small>
+                </div>
+            </div>
+
+            <button class="settings-btn" id="cycleBtn">⚙</button>
+        </header>
+
+        <section class="page active" id="dashboard">
+
+            <header class="page-title">
+                <h1>Resumo</h1>
+                <p>Visão geral do ciclo atual.</p>
+            </header>
+
+            <div class="hero-grid">
+
+                <article class="hero card">
+                    <span class="label">Ciclo atual</span>
+
+                    <h2 id="cycleName"></h2>
+                    <p id="cycleDates"></p>
+
+                    <strong id="heroTotal">R$ 0,00</strong>
+
+                    <div class="hero-info">
+                        <div>
+                            <b id="heroBudget">R$ 0,00</b>
+                            <small>orçamento</small>
+                        </div>
+
+                        <div>
+                            <b id="heroLeft">R$ 0,00</b>
+                            <small id="heroLeftLabel">restante</small>
+                        </div>
+                    </div>
+
+                    <div class="progress">
+                        <i id="heroProgress"></i>
+                    </div>
+
+                    <span class="status" id="heroStatus"></span>
+                </article>
+
+                <article class="card donut-card">
+
+                    <div class="donut">
+                        <svg viewBox="0 0 180 180">
+                            <circle
+                                class="donut-bg"
+                                cx="90"
+                                cy="90"
+                                r="70"
+                            />
+
+                            <circle
+                                class="donut-fill"
+                                id="donutFill"
+                                cx="90"
+                                cy="90"
+                                r="70"
+                            />
+                        </svg>
+
+                        <div>
+                            <b id="donutPercent">0%</b>
+                            <small>utilizado</small>
+                        </div>
+                    </div>
+
+                    <div class="legend">
+                        <span>Situação do ciclo</span>
+
+                        <strong id="legendBalance">
+                            R$ 0,00
+                        </strong>
+
+                        <p>
+                            🟢 Gasto
+                            <b id="legendSpent">R$ 0,00</b>
+                        </p>
+
+                        <p>
+                            ⚪ Disponível
+                            <b id="legendAvailable">R$ 0,00</b>
+                        </p>
+                    </div>
+
+                </article>
+
+            </div>
+
+            <div class="stats">
+
+                <article class="card stat">
+                    <span>🛒 Mistura</span>
+                    <strong id="misturaValue">R$ 0,00</strong>
+                    <small id="misturaDetail"></small>
+                </article>
+
+                <article class="card stat">
+                    <span>🏠 Geral</span>
+                    <strong id="geralValue">R$ 0,00</strong>
+                    <small id="geralDetail"></small>
+                </article>
+
+                <article class="card stat">
+                    <span>📅 Dias restantes</span>
+                    <strong id="daysLeft">0</strong>
+                    <small id="daysDetail"></small>
+                </article>
+
+            </div>
+
+        </section>
+
+        <section class="page" id="add">
+
+            <header class="page-title">
+                <h1>Adicionar gasto</h1>
+                <p>Registre uma nova compra.</p>
+            </header>
+
+            <article class="card form-card">
+
+                <form id="expenseForm">
+
+                    <input
+                        id="desc"
+                        placeholder="Ex.: carne, arroz, detergente..."
+                        autocomplete="off"
+                        required
+                    >
+
+                    <input
+                        id="amount"
+                        type="number"
+                        min=".01"
+                        step=".01"
+                        inputmode="decimal"
+                        placeholder="Valor (R$)"
+                        required
+                    >
+
+                    <select id="category">
+                        <option value="mistura">🛒 Mistura</option>
+                        <option value="geral">🏠 Geral</option>
+                    </select>
+
+                    <button class="primary">
+                        ＋ Adicionar
+                    </button>
+
+                </form>
+
+                <div class="icons" id="iconPicker"></div>
+
+            </article>
+
+        </section>
+
+        <section class="page" id="history">
+
+            <header class="page-title">
+                <h1>Histórico</h1>
+                <p>Compras organizadas por ciclo.</p>
+            </header>
+
+            <article class="card history-card">
+
+                <div class="toolbar">
+
+                    <input
+                        id="search"
+                        type="search"
+                        placeholder="🔎 Buscar..."
+                        autocomplete="off"
+                    >
+
+                    <select id="filter">
+                        <option value="all">Todas</option>
+                        <option value="mistura">Mistura</option>
+                        <option value="geral">Geral</option>
+                    </select>
+
+                </div>
+
+                <div class="cycles" id="cycleTabs"></div>
+
+                <div id="selectedCycleSummary"></div>
+
+                <ul class="expenses" id="expenseList"></ul>
+
+                <footer>
+                    <span id="footerInfo"></span>
+
+                    <button class="link-danger" id="clearBtn">
+                        Limpar histórico
+                    </button>
+                </footer>
+
+            </article>
+
+        </section>
+
+        <section class="page" id="settings">
+
+            <header class="page-title">
+                <h1>Configurações</h1>
+                <p>Configure seu ciclo e orçamento.</p>
+            </header>
+
+            <article class="card settings-card">
+
+                <label>
+                    Dia de início
+                    <input
+                        id="pageStartDay"
+                        type="number"
+                        min="1"
+                        max="28"
+                    >
+                </label>
+
+                <label>
+                    Orçamento de Mistura
+                    <input
+                        id="pageBudgetMistura"
+                        type="number"
+                        min=".01"
+                        step=".01"
+                    >
+                </label>
+
+                <label>
+                    Orçamento Geral
+                    <input
+                        id="pageBudgetGeral"
+                        type="number"
+                        min=".01"
+                        step=".01"
+                    >
+                </label>
+
+                <button class="primary" id="savePageSettings">
+                    Salvar configurações
+                </button>
+
+                <button class="secondary" id="logoutBtn" type="button">
+                    Sair da conta
+                </button>
+
+            </article>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- LOGIN -->
+
+<div class="modal-bg" id="authModal">
+
+    <div class="modal">
+
+        <h2>Despesas da Casa</h2>
+
+        <p id="authDescription">
+            Entre na sua conta para acessar seus dados.
+        </p>
+
+        <form id="authForm">
+
+            <label>
+                E-mail
+                <input
+                    id="authEmail"
+                    type="email"
+                    autocomplete="email"
+                    required
+                >
+            </label>
+
+            <label>
+                Senha
+                <input
+                    id="authPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    minlength="6"
+                    required
+                >
+            </label>
+
+            <div class="modal-actions">
+
+                <button
+                    class="secondary"
+                    type="button"
+                    id="registerBtn"
+                >
+                    Criar conta
+                </button>
+
+                <button class="primary" type="submit">
+                    Entrar
+                </button>
+
+            </div>
+
+        </form>
+
+        <button
+            class="link-danger"
+            id="forgotPasswordBtn"
+            type="button"
+        >
+            Esqueci minha senha
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- CONFIGURAÇÃO DO CICLO -->
+
+<div class="modal-bg hidden" id="modalBackdrop">
+
+    <div class="modal">
+
+        <h2>Configuração do ciclo</h2>
+
+        <p>
+            O ciclo começa no dia escolhido e termina no dia anterior
+            do mês seguinte.
+        </p>
+
+        <label>
+            Dia de início
+            <input
+                id="startDay"
+                type="number"
+                min="1"
+                max="28"
+            >
+        </label>
+
+        <label>
+            Orçamento de Mistura
+            <input
+                id="budgetMistura"
+                type="number"
+                min=".01"
+                step=".01"
+            >
+        </label>
+
+        <label>
+            Orçamento Geral
+            <input
+                id="budgetGeral"
+                type="number"
+                min=".01"
+                step=".01"
+            >
+        </label>
+
+        <div class="modal-actions">
+
+            <button class="secondary" id="cancelModal">
+                Cancelar
+            </button>
+
+            <button class="primary" id="saveSettings">
+                Salvar
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
