@@ -2,449 +2,1697 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="theme-color" content="#0f172a">
-    <meta name="color-scheme" content="light dark">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#0f1117">
+    <meta name="description" content="Controle simples das despesas da casa">
+
     <title>Despesas da Casa</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<div class="layout" id="appLayout">
+    <!-- =========================================================
+         APP
+    ========================================================== -->
 
-    <aside class="sidebar" id="sidebar">
-        <div class="brand">
-            <div class="logo">R$</div>
-            <div>
-                <strong>Despesas da Casa</strong>
-                <small>Controle financeiro</small>
+    <div id="app" class="app hidden">
+
+        <!-- Overlay mobile -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <!-- =====================================================
+             SIDEBAR
+        ====================================================== -->
+
+        <aside id="sidebar" class="sidebar">
+
+            <div class="sidebar-header">
+
+                <div class="brand">
+                    <div class="brand-icon">💰</div>
+
+                    <div class="brand-text">
+                        <strong>Despesas</strong>
+                        <span>da Casa</span>
+                    </div>
+                </div>
+
+                <button
+                    id="closeSidebarBtn"
+                    class="icon-button mobile-only"
+                    type="button"
+                    aria-label="Fechar menu">
+                    ✕
+                </button>
+
             </div>
+
+
+            <!-- Usuário no menu -->
+
+            <button
+                id="sidebarProfile"
+                class="sidebar-profile"
+                type="button">
+
+                <div id="sidebarAvatar" class="avatar avatar-small">
+                    👤
+                </div>
+
+                <div class="sidebar-profile-info">
+                    <strong id="sidebarName">Usuário</strong>
+                    <span id="sidebarEmail">—</span>
+                </div>
+
+                <span class="sidebar-profile-arrow">›</span>
+
+            </button>
+
+
+            <!-- Navegação -->
+
+            <nav class="sidebar-nav">
+
+                <button
+                    class="nav-item active"
+                    data-page="dashboard"
+                    type="button">
+
+                    <span class="nav-icon">📊</span>
+                    <span>Resumo</span>
+
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="add"
+                    type="button">
+
+                    <span class="nav-icon">➕</span>
+                    <span>Adicionar gasto</span>
+
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="history"
+                    type="button">
+
+                    <span class="nav-icon">📋</span>
+                    <span>Histórico</span>
+
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="profile"
+                    type="button">
+
+                    <span class="nav-icon">👤</span>
+                    <span>Perfil</span>
+
+                </button>
+
+
+                <button
+                    class="nav-item"
+                    data-page="settings"
+                    type="button">
+
+                    <span class="nav-icon">⚙️</span>
+                    <span>Configurações</span>
+
+                </button>
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+
+                <div class="sidebar-version">
+                    Despesas da Casa
+                    <span>v1.0</span>
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =====================================================
+             MAIN
+        ====================================================== -->
+
+        <main class="main">
+
+            <!-- Header -->
+
+            <header class="topbar">
+
+                <button
+                    id="openSidebarBtn"
+                    class="icon-button mobile-only"
+                    type="button"
+                    aria-label="Abrir menu">
+                    ☰
+                </button>
+
+
+                <div class="topbar-title">
+
+                    <h1 id="pageTitle">Resumo</h1>
+                    <span id="pageSubtitle">Visão geral das suas despesas</span>
+
+                </div>
+
+
+                <div class="topbar-actions">
+
+                    <button
+                        id="cycleButton"
+                        class="cycle-button"
+                        type="button"
+                        title="Alterar ciclo">
+
+                        <span>📅</span>
+                        <span id="cycleLabel">Ciclo atual</span>
+
+                    </button>
+
+
+                    <button
+                        id="topProfileButton"
+                        class="top-profile"
+                        type="button"
+                        title="Perfil">
+
+                        <div id="topAvatar" class="avatar avatar-small">
+                            👤
+                        </div>
+
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- =================================================
+                 PAGE: DASHBOARD
+            ================================================== -->
+
+            <section
+                id="page-dashboard"
+                class="page active">
+
+                <div class="page-content">
+
+                    <!-- Cards principais -->
+
+                    <div class="stats-grid">
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span class="stat-label">Orçamento</span>
+                                <span class="stat-icon">🎯</span>
+                            </div>
+
+                            <strong
+                                id="dashboardBudget"
+                                class="stat-value">
+                                R$ 0,00
+                            </strong>
+
+                            <span class="stat-description">
+                                limite do ciclo
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span class="stat-label">Gastos</span>
+                                <span class="stat-icon">💸</span>
+                            </div>
+
+                            <strong
+                                id="dashboardSpent"
+                                class="stat-value">
+                                R$ 0,00
+                            </strong>
+
+                            <span
+                                id="dashboardSpentDescription"
+                                class="stat-description">
+                                neste ciclo
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span class="stat-label">Saldo</span>
+                                <span class="stat-icon">💰</span>
+                            </div>
+
+                            <strong
+                                id="dashboardBalance"
+                                class="stat-value">
+                                R$ 0,00
+                            </strong>
+
+                            <span
+                                id="dashboardBalanceDescription"
+                                class="stat-description">
+                                disponível
+                            </span>
+
+                        </article>
+
+
+                        <article class="stat-card">
+
+                            <div class="stat-card-top">
+                                <span class="stat-label">Dias restantes</span>
+                                <span class="stat-icon">⏳</span>
+                            </div>
+
+                            <strong
+                                id="dashboardDays"
+                                class="stat-value">
+                                0
+                            </strong>
+
+                            <span class="stat-description">
+                                no ciclo atual
+                            </span>
+
+                        </article>
+
+                    </div>
+
+
+                    <!-- Progresso -->
+
+                    <div class="dashboard-grid">
+
+                        <article class="card progress-card">
+
+                            <div class="card-header">
+
+                                <div>
+                                    <h2>Progresso do orçamento</h2>
+                                    <span id="progressText">
+                                        0% utilizado
+                                    </span>
+                                </div>
+
+                                <strong id="progressPercent">
+                                    0%
+                                </strong>
+
+                            </div>
+
+
+                            <div class="progress-track">
+
+                                <div
+                                    id="progressBar"
+                                    class="progress-bar"
+                                    style="width: 0%;">
+                                </div>
+
+                            </div>
+
+
+                            <div class="progress-footer">
+
+                                <span>
+                                    Gastos:
+                                    <strong id="progressSpent">
+                                        R$ 0,00
+                                    </strong>
+                                </span>
+
+                                <span>
+                                    Orçamento:
+                                    <strong id="progressBudget">
+                                        R$ 0,00
+                                    </strong>
+                                </span>
+
+                            </div>
+
+                        </article>
+
+
+                        <!-- Donut -->
+
+                        <article class="card donut-card">
+
+                            <div class="card-header">
+                                <div>
+                                    <h2>Distribuição</h2>
+                                    <span>Gastos por categoria</span>
+                                </div>
+                            </div>
+
+
+                            <div class="donut-container">
+
+                                <div
+                                    id="expenseDonut"
+                                    class="donut">
+
+                                    <div class="donut-center">
+
+                                        <strong id="donutTotal">
+                                            R$ 0
+                                        </strong>
+
+                                        <span>
+                                            total
+                                        </span>
+
+                                    </div>
+
+                                </div>
+
+
+                                <div class="donut-legend">
+
+                                    <div class="legend-item">
+
+                                        <span class="legend-dot mistura"></span>
+
+                                        <div>
+                                            <strong>Mistura</strong>
+                                            <span id="legendMistura">
+                                                R$ 0,00
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+
+                                    <div class="legend-item">
+
+                                        <span class="legend-dot geral"></span>
+
+                                        <div>
+                                            <strong>Geral</strong>
+                                            <span id="legendGeral">
+                                                R$ 0,00
+                                            </span>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </article>
+
+                    </div>
+
+
+                    <!-- Categorias -->
+
+                    <article class="card category-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <h2>Orçamento por categoria</h2>
+                                <span>
+                                    Acompanhe cada categoria
+                                </span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="category-list">
+
+                            <div class="category-row">
+
+                                <div class="category-row-icon mistura">
+                                    🛒
+                                </div>
+
+                                <div class="category-row-main">
+
+                                    <div class="category-row-title">
+
+                                        <strong>Mistura</strong>
+
+                                        <span id="categoryMisturaText">
+                                            R$ 0,00 / R$ 0,00
+                                        </span>
+
+                                    </div>
+
+                                    <div class="mini-progress">
+
+                                        <div
+                                            id="categoryMisturaBar"
+                                            style="width: 0%;">
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="category-row">
+
+                                <div class="category-row-icon geral">
+                                    🏠
+                                </div>
+
+                                <div class="category-row-main">
+
+                                    <div class="category-row-title">
+
+                                        <strong>Geral</strong>
+
+                                        <span id="categoryGeralText">
+                                            R$ 0,00 / R$ 0,00
+                                        </span>
+
+                                    </div>
+
+                                    <div class="mini-progress">
+
+                                        <div
+                                            id="categoryGeralBar"
+                                            style="width: 0%;">
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PAGE: ADD
+            ================================================== -->
+
+            <section
+                id="page-add"
+                class="page">
+
+                <div class="page-content narrow">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Adicionar gasto</h2>
+                            <p>
+                                Registre uma nova despesa.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <form
+                        id="expenseForm"
+                        class="card form-card">
+
+                        <div class="form-group">
+
+                            <label for="expenseDescription">
+                                Descrição
+                            </label>
+
+                            <input
+                                id="expenseDescription"
+                                type="text"
+                                placeholder="Ex.: Mercado, energia, internet..."
+                                maxlength="100"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="expenseAmount">
+                                Valor
+                            </label>
+
+                            <div class="money-input">
+
+                                <span>R$</span>
+
+                                <input
+                                    id="expenseAmount"
+                                    type="number"
+                                    min="0.01"
+                                    step="0.01"
+                                    placeholder="0,00"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Categoria
+                            </label>
+
+                            <div class="category-select">
+
+                                <label class="category-option">
+
+                                    <input
+                                        type="radio"
+                                        name="expenseCategory"
+                                        value="mistura"
+                                        checked>
+
+                                    <span class="category-option-content">
+
+                                        <span class="category-option-icon">
+                                            🛒
+                                        </span>
+
+                                        <span>
+                                            <strong>Mistura</strong>
+                                            <small>
+                                                Alimentação e compras
+                                            </small>
+                                        </span>
+
+                                    </span>
+
+                                </label>
+
+
+                                <label class="category-option">
+
+                                    <input
+                                        type="radio"
+                                        name="expenseCategory"
+                                        value="geral">
+
+                                    <span class="category-option-content">
+
+                                        <span class="category-option-icon">
+                                            🏠
+                                        </span>
+
+                                        <span>
+                                            <strong>Geral</strong>
+                                            <small>
+                                                Outras despesas
+                                            </small>
+                                        </span>
+
+                                    </span>
+
+                                </label>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Ícone
+                            </label>
+
+                            <div
+                                id="expenseIconPicker"
+                                class="icon-picker">
+
+                                <button
+                                    type="button"
+                                    class="expense-icon active"
+                                    data-icon="🛒">
+                                    🛒
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="🍔">
+                                    🍔
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="🏠">
+                                    🏠
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="💡">
+                                    💡
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="💧">
+                                    💧
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="📱">
+                                    📱
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="🚗">
+                                    🚗
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="🛍️">
+                                    🛍️
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="💊">
+                                    💊
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="expense-icon"
+                                    data-icon="🎮">
+                                    🎮
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="form-actions">
+
+                            <button
+                                type="button"
+                                id="cancelExpenseBtn"
+                                class="secondary">
+                                Cancelar
+                            </button>
+
+                            <button
+                                type="submit"
+                                class="primary">
+                                Adicionar gasto
+                            </button>
+
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PAGE: HISTORY
+            ================================================== -->
+
+            <section
+                id="page-history"
+                class="page">
+
+                <div class="page-content">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Histórico</h2>
+                            <p>
+                                Todos os seus gastos registrados.
+                            </p>
+                        </div>
+
+                        <button
+                            id="clearHistoryBtn"
+                            class="danger-outline"
+                            type="button">
+                            Limpar histórico
+                        </button>
+
+                    </div>
+
+
+                    <div class="card history-card">
+
+                        <div class="history-toolbar">
+
+                            <div class="search-box">
+
+                                <span>🔎</span>
+
+                                <input
+                                    id="historySearch"
+                                    type="search"
+                                    placeholder="Pesquisar gasto...">
+
+                            </div>
+
+
+                            <select id="historyCategory">
+
+                                <option value="all">
+                                    Todas as categorias
+                                </option>
+
+                                <option value="mistura">
+                                    Mistura
+                                </option>
+
+                                <option value="geral">
+                                    Geral
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div
+                            id="historyCycleTabs"
+                            class="cycle-tabs">
+
+                            <button
+                                type="button"
+                                class="cycle-tab active"
+                                data-cycle="current">
+                                Ciclo atual
+                            </button>
+
+                            <button
+                                type="button"
+                                class="cycle-tab"
+                                data-cycle="all">
+                                Todos
+                            </button>
+
+                        </div>
+
+
+                        <div
+                            id="historyList"
+                            class="history-list">
+                        </div>
+
+
+                        <div
+                            id="historyEmpty"
+                            class="empty-state hidden">
+
+                            <div class="empty-icon">
+                                🧾
+                            </div>
+
+                            <h3>Nenhum gasto encontrado</h3>
+
+                            <p>
+                                Os gastos adicionados aparecerão aqui.
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PAGE: PROFILE
+            ================================================== -->
+
+            <section
+                id="page-profile"
+                class="page">
+
+                <div class="page-content narrow">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Meu perfil</h2>
+                            <p>
+                                Gerencie seus dados pessoais.
+                            </p>
+                        </div>
+
+                        <button
+                            id="editProfileTopBtn"
+                            class="secondary"
+                            type="button">
+                            ✏️ Editar
+                        </button>
+
+                    </div>
+
+
+                    <!-- Card principal do perfil -->
+
+                    <article class="card profile-card">
+
+                        <div class="profile-cover"></div>
+
+
+                        <div class="profile-main">
+
+                            <div
+                                id="profileAvatar"
+                                class="profile-avatar">
+                                👤
+                            </div>
+
+
+                            <div class="profile-identity">
+
+                                <h2 id="profileName">
+                                    Usuário
+                                </h2>
+
+                                <p id="profileEmail">
+                                    —
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Visualização -->
+
+                        <div
+                            id="profileView"
+                            class="profile-view">
+
+                            <div class="profile-info-grid">
+
+                                <div class="profile-info-item">
+
+                                    <span class="profile-info-label">
+                                        Nome
+                                    </span>
+
+                                    <strong id="profileViewName">
+                                        Usuário
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="profile-info-item">
+
+                                    <span class="profile-info-label">
+                                        E-mail
+                                    </span>
+
+                                    <strong
+                                        id="profileViewEmail">
+                                        —
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="profile-info-item">
+
+                                    <span class="profile-info-label">
+                                        Conta criada
+                                    </span>
+
+                                    <strong
+                                        id="profileCreatedAt">
+                                        —
+                                    </strong>
+
+                                </div>
+
+                            </div>
+
+
+                            <button
+                                id="editProfileBtn"
+                                class="primary full-width"
+                                type="button">
+                                ✏️ Editar perfil
+                            </button>
+
+                        </div>
+
+
+                        <!-- Edição -->
+
+                        <form
+                            id="profileEditForm"
+                            class="profile-edit hidden">
+
+                            <div class="form-group">
+
+                                <label for="profileNameInput">
+                                    Nome
+                                </label>
+
+                                <input
+                                    id="profileNameInput"
+                                    type="text"
+                                    maxlength="60"
+                                    placeholder="Seu nome">
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label>
+                                    Avatar
+                                </label>
+
+                                <div
+                                    id="avatarPicker"
+                                    class="avatar-picker">
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option active"
+                                        data-avatar="👤">
+                                        👤
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="😀">
+                                        😀
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="😎">
+                                        😎
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🤓">
+                                        🤓
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🦊">
+                                        🦊
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🐱">
+                                        🐱
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🐶">
+                                        🐶
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🐼">
+                                        🐼
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🐸">
+                                        🐸
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🦄">
+                                        🦄
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🚀">
+                                        🚀
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="👽">
+                                        👽
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🤖">
+                                        🤖
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🎮">
+                                        🎮
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="👾">
+                                        👾
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="avatar-option"
+                                        data-avatar="🧑‍🚀">
+                                        🧑‍🚀
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-actions">
+
+                                <button
+                                    type="button"
+                                    id="cancelProfileEditBtn"
+                                    class="secondary">
+                                    Cancelar
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    class="primary">
+                                    Salvar alterações
+                                </button>
+
+                            </div>
+
+                        </form>
+
+                    </article>
+
+
+                    <!-- Segurança -->
+
+                    <article class="card security-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <h2>Segurança</h2>
+                                <span>
+                                    Altere sua senha de acesso.
+                                </span>
+                            </div>
+
+                            <span class="security-icon">
+                                🔐
+                            </span>
+
+                        </div>
+
+
+                        <form id="passwordChangeForm">
+
+                            <div class="form-group">
+
+                                <label for="newPassword">
+                                    Nova senha
+                                </label>
+
+                                <input
+                                    id="newPassword"
+                                    type="password"
+                                    minlength="6"
+                                    autocomplete="new-password"
+                                    placeholder="Mínimo de 6 caracteres">
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="confirmPassword">
+                                    Confirmar nova senha
+                                </label>
+
+                                <input
+                                    id="confirmPassword"
+                                    type="password"
+                                    minlength="6"
+                                    autocomplete="new-password"
+                                    placeholder="Digite novamente">
+
+                            </div>
+
+
+                            <button
+                                type="submit"
+                                class="primary">
+                                Alterar senha
+                            </button>
+
+                        </form>
+
+                    </article>
+
+                </div>
+
+            </section>
+
+
+            <!-- =================================================
+                 PAGE: SETTINGS
+            ================================================== -->
+
+            <section
+                id="page-settings"
+                class="page">
+
+                <div class="page-content narrow">
+
+                    <div class="section-heading">
+
+                        <div>
+                            <h2>Configurações</h2>
+                            <p>
+                                Personalize seu controle financeiro.
+                            </p>
+                        </div>
+
+                    </div>
+
+
+                    <!-- Ciclo -->
+
+                    <article class="card settings-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <h2>Ciclo mensal</h2>
+
+                                <span>
+                                    Defina o dia em que seu ciclo começa.
+                                </span>
+                            </div>
+
+                            <span class="settings-icon">
+                                📅
+                            </span>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="startDay">
+                                Dia inicial
+                            </label>
+
+                            <select id="startDay">
+
+                                <option value="1">Dia 1</option>
+                                <option value="2">Dia 2</option>
+                                <option value="3">Dia 3</option>
+                                <option value="4">Dia 4</option>
+                                <option value="5">Dia 5</option>
+                                <option value="6">Dia 6</option>
+                                <option value="7">Dia 7</option>
+                                <option value="8">Dia 8</option>
+                                <option value="9">Dia 9</option>
+                                <option value="10">Dia 10</option>
+                                <option value="11">Dia 11</option>
+                                <option value="12">Dia 12</option>
+                                <option value="13">Dia 13</option>
+                                <option value="14">Dia 14</option>
+                                <option value="15">Dia 15</option>
+                                <option value="16">Dia 16</option>
+                                <option value="17">Dia 17</option>
+                                <option value="18">Dia 18</option>
+                                <option value="19">Dia 19</option>
+                                <option value="20">Dia 20</option>
+                                <option value="21">Dia 21</option>
+                                <option value="22">Dia 22</option>
+                                <option value="23">Dia 23</option>
+                                <option value="24">Dia 24</option>
+                                <option value="25">Dia 25</option>
+                                <option value="26">Dia 26</option>
+                                <option value="27">Dia 27</option>
+                                <option value="28">Dia 28</option>
+
+                            </select>
+
+                        </div>
+
+                    </article>
+
+
+                    <!-- Orçamento -->
+
+                    <article class="card settings-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <h2>Orçamento</h2>
+
+                                <span>
+                                    Defina os limites das categorias.
+                                </span>
+                            </div>
+
+                            <span class="settings-icon">
+                                🎯
+                            </span>
+
+                        </div>
+
+
+                        <div class="settings-budget-grid">
+
+                            <div class="form-group">
+
+                                <label for="budgetMistura">
+                                    Mistura
+                                </label>
+
+                                <div class="money-input">
+
+                                    <span>R$</span>
+
+                                    <input
+                                        id="budgetMistura"
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01">
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="form-group">
+
+                                <label for="budgetGeral">
+                                    Geral
+                                </label>
+
+                                <div class="money-input">
+
+                                    <span>R$</span>
+
+                                    <input
+                                        id="budgetGeral"
+                                        type="number"
+                                        min="0.01"
+                                        step="0.01">
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <button
+                            id="saveSettingsBtn"
+                            class="primary"
+                            type="button">
+                            Salvar configurações
+                        </button>
+
+                    </article>
+
+
+                    <!-- Conta -->
+
+                    <article class="card account-card">
+
+                        <div class="card-header">
+
+                            <div>
+                                <h2>Sua conta</h2>
+
+                                <span id="settingsAccountEmail">
+                                    —
+                                </span>
+                            </div>
+
+                            <span class="settings-icon">
+                                👤
+                            </span>
+
+                        </div>
+
+
+                        <button
+                            id="logoutBtn"
+                            class="danger-button"
+                            type="button">
+                            🚪 Sair da conta
+                        </button>
+
+                    </article>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <!-- =========================================================
+         AUTH MODAL
+    ========================================================== -->
+
+    <div
+        id="authModal"
+        class="modal-bg">
+
+        <div class="modal auth-modal">
+
+            <div class="auth-logo">
+                💰
+            </div>
+
+            <h2 id="authTitle">
+                Despesas da Casa
+            </h2>
+
+            <p id="authDescription">
+                Entre na sua conta para acessar seus dados.
+            </p>
+
+
+            <form id="authForm">
+
+                <div class="form-group">
+
+                    <label for="authEmail">
+                        E-mail
+                    </label>
+
+                    <input
+                        id="authEmail"
+                        type="email"
+                        autocomplete="email"
+                        placeholder="seu@email.com"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="authPassword">
+                        Senha
+                    </label>
+
+                    <input
+                        id="authPassword"
+                        type="password"
+                        autocomplete="current-password"
+                        minlength="6"
+                        placeholder="Sua senha"
+                        required>
+
+                </div>
+
+
+                <div class="modal-actions">
+
+                    <button
+                        class="secondary"
+                        type="button"
+                        id="registerBtn">
+                        Criar conta
+                    </button>
+
+                    <button
+                        class="primary"
+                        type="submit">
+                        Entrar
+                    </button>
+
+                </div>
+
+            </form>
+
+
+            <button
+                class="link-button"
+                id="forgotPasswordBtn"
+                type="button">
+                Esqueci minha senha
+            </button>
+
         </div>
 
-        <nav>
-            <button class="nav-btn active" data-page="dashboard">
-                📊 <span>Resumo</span>
-            </button>
+    </div>
 
-            <button class="nav-btn" data-page="add">
-                ➕ <span>Adicionar gasto</span>
-            </button>
 
-            <button class="nav-btn" data-page="history">
-                📋 <span>Histórico</span>
-            </button>
+    <!-- =========================================================
+         PASSWORD RESET MODAL
+    ========================================================== -->
 
-            <button class="nav-btn" data-page="settings">
-                ⚙️ <span>Configurações</span>
-            </button>
-        </nav>
+    <div
+        id="passwordResetModal"
+        class="modal-bg hidden">
 
-        <small class="sidebar-footer">
-            Dados sincronizados com sua conta.
-        </small>
-    </aside>
+        <div class="modal">
 
-    <div class="overlay" id="overlay"></div>
-
-    <main>
-
-        <header class="topbar">
-            <button class="menu-btn" id="menuBtn">☰</button>
-
-            <div class="brand mobile-brand">
-                <div class="logo">R$</div>
-                <div>
-                    <strong>Despesas da Casa</strong>
-                    <small id="today"></small>
-                </div>
+            <div class="modal-icon">
+                🔐
             </div>
 
-            <button class="settings-btn" id="cycleBtn">⚙</button>
-        </header>
+            <h2>Nova senha</h2>
 
-        <section class="page active" id="dashboard">
+            <p>
+                Digite uma nova senha para sua conta.
+            </p>
 
-            <header class="page-title">
-                <h1>Resumo</h1>
-                <p>Visão geral do ciclo atual.</p>
-            </header>
 
-            <div class="hero-grid">
+            <form id="passwordResetForm">
 
-                <article class="hero card">
-                    <span class="label">Ciclo atual</span>
+                <div class="form-group">
 
-                    <h2 id="cycleName"></h2>
-                    <p id="cycleDates"></p>
-
-                    <strong id="heroTotal">R$ 0,00</strong>
-
-                    <div class="hero-info">
-                        <div>
-                            <b id="heroBudget">R$ 0,00</b>
-                            <small>orçamento</small>
-                        </div>
-
-                        <div>
-                            <b id="heroLeft">R$ 0,00</b>
-                            <small id="heroLeftLabel">restante</small>
-                        </div>
-                    </div>
-
-                    <div class="progress">
-                        <i id="heroProgress"></i>
-                    </div>
-
-                    <span class="status" id="heroStatus"></span>
-                </article>
-
-                <article class="card donut-card">
-
-                    <div class="donut">
-                        <svg viewBox="0 0 180 180">
-                            <circle
-                                class="donut-bg"
-                                cx="90"
-                                cy="90"
-                                r="70"
-                            />
-
-                            <circle
-                                class="donut-fill"
-                                id="donutFill"
-                                cx="90"
-                                cy="90"
-                                r="70"
-                            />
-                        </svg>
-
-                        <div>
-                            <b id="donutPercent">0%</b>
-                            <small>utilizado</small>
-                        </div>
-                    </div>
-
-                    <div class="legend">
-                        <span>Situação do ciclo</span>
-
-                        <strong id="legendBalance">
-                            R$ 0,00
-                        </strong>
-
-                        <p>
-                            🟢 Gasto
-                            <b id="legendSpent">R$ 0,00</b>
-                        </p>
-
-                        <p>
-                            ⚪ Disponível
-                            <b id="legendAvailable">R$ 0,00</b>
-                        </p>
-                    </div>
-
-                </article>
-
-            </div>
-
-            <div class="stats">
-
-                <article class="card stat">
-                    <span>🛒 Mistura</span>
-                    <strong id="misturaValue">R$ 0,00</strong>
-                    <small id="misturaDetail"></small>
-                </article>
-
-                <article class="card stat">
-                    <span>🏠 Geral</span>
-                    <strong id="geralValue">R$ 0,00</strong>
-                    <small id="geralDetail"></small>
-                </article>
-
-                <article class="card stat">
-                    <span>📅 Dias restantes</span>
-                    <strong id="daysLeft">0</strong>
-                    <small id="daysDetail"></small>
-                </article>
-
-            </div>
-
-        </section>
-
-        <section class="page" id="add">
-
-            <header class="page-title">
-                <h1>Adicionar gasto</h1>
-                <p>Registre uma nova compra.</p>
-            </header>
-
-            <article class="card form-card">
-
-                <form id="expenseForm">
+                    <label for="resetNewPassword">
+                        Nova senha
+                    </label>
 
                     <input
-                        id="desc"
-                        placeholder="Ex.: carne, arroz, detergente..."
-                        autocomplete="off"
-                        required
-                    >
-
-                    <input
-                        id="amount"
-                        type="number"
-                        min=".01"
-                        step=".01"
-                        inputmode="decimal"
-                        placeholder="Valor (R$)"
-                        required
-                    >
-
-                    <select id="category">
-                        <option value="mistura">🛒 Mistura</option>
-                        <option value="geral">🏠 Geral</option>
-                    </select>
-
-                    <button class="primary">
-                        ＋ Adicionar
-                    </button>
-
-                </form>
-
-                <div class="icons" id="iconPicker"></div>
-
-            </article>
-
-        </section>
-
-        <section class="page" id="history">
-
-            <header class="page-title">
-                <h1>Histórico</h1>
-                <p>Compras organizadas por ciclo.</p>
-            </header>
-
-            <article class="card history-card">
-
-                <div class="toolbar">
-
-                    <input
-                        id="search"
-                        type="search"
-                        placeholder="🔎 Buscar..."
-                        autocomplete="off"
-                    >
-
-                    <select id="filter">
-                        <option value="all">Todas</option>
-                        <option value="mistura">Mistura</option>
-                        <option value="geral">Geral</option>
-                    </select>
+                        id="resetNewPassword"
+                        type="password"
+                        minlength="6"
+                        autocomplete="new-password"
+                        placeholder="Mínimo de 6 caracteres"
+                        required>
 
                 </div>
 
-                <div class="cycles" id="cycleTabs"></div>
 
-                <div id="selectedCycleSummary"></div>
+                <div class="form-group">
 
-                <ul class="expenses" id="expenseList"></ul>
+                    <label for="resetConfirmPassword">
+                        Confirmar senha
+                    </label>
 
-                <footer>
-                    <span id="footerInfo"></span>
-
-                    <button class="link-danger" id="clearBtn">
-                        Limpar histórico
-                    </button>
-                </footer>
-
-            </article>
-
-        </section>
-
-        <section class="page" id="settings">
-
-            <header class="page-title">
-                <h1>Configurações</h1>
-                <p>Configure seu ciclo e orçamento.</p>
-            </header>
-
-            <article class="card settings-card">
-
-                <label>
-                    Dia de início
                     <input
-                        id="pageStartDay"
-                        type="number"
-                        min="1"
-                        max="28"
-                    >
-                </label>
+                        id="resetConfirmPassword"
+                        type="password"
+                        minlength="6"
+                        autocomplete="new-password"
+                        placeholder="Digite novamente"
+                        required>
 
-                <label>
-                    Orçamento de Mistura
-                    <input
-                        id="pageBudgetMistura"
-                        type="number"
-                        min=".01"
-                        step=".01"
-                    >
-                </label>
+                </div>
 
-                <label>
-                    Orçamento Geral
-                    <input
-                        id="pageBudgetGeral"
-                        type="number"
-                        min=".01"
-                        step=".01"
-                    >
-                </label>
 
-                <button class="primary" id="savePageSettings">
-                    Salvar configurações
+                <button
+                    class="primary full-width"
+                    type="submit">
+                    Definir nova senha
                 </button>
 
-                <button class="secondary" id="logoutBtn" type="button">
-                    Sair da conta
-                </button>
+            </form>
 
-            </article>
+        </div>
 
-        </section>
-
-    </main>
-
-</div>
+    </div>
 
 
-<!-- LOGIN -->
+    <!-- =========================================================
+         CYCLE MODAL
+    ========================================================== -->
 
-<div class="modal-bg" id="authModal">
+    <div
+        id="cycleModal"
+        class="modal-bg hidden">
 
-    <div class="modal">
+        <div class="modal">
 
-        <h2>Despesas da Casa</h2>
+            <div class="modal-icon">
+                📅
+            </div>
 
-        <p id="authDescription">
-            Entre na sua conta para acessar seus dados.
-        </p>
+            <h2>Ciclo atual</h2>
 
-        <form id="authForm">
+            <p id="cycleModalText">
+                —
+            </p>
 
-            <label>
-                E-mail
-                <input
-                    id="authEmail"
-                    type="email"
-                    autocomplete="email"
-                    required
-                >
-            </label>
-
-            <label>
-                Senha
-                <input
-                    id="authPassword"
-                    type="password"
-                    autocomplete="current-password"
-                    minlength="6"
-                    required
-                >
-            </label>
 
             <div class="modal-actions">
 
                 <button
-                    class="secondary"
-                    type="button"
-                    id="registerBtn"
-                >
-                    Criar conta
-                </button>
-
-                <button class="primary" type="submit">
-                    Entrar
+                    id="closeCycleModalBtn"
+                    class="primary"
+                    type="button">
+                    Fechar
                 </button>
 
             </div>
-
-        </form>
-
-        <button
-            class="link-danger"
-            id="forgotPasswordBtn"
-            type="button"
-        >
-            Esqueci minha senha
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- CONFIGURAÇÃO DO CICLO -->
-
-<div class="modal-bg hidden" id="modalBackdrop">
-
-    <div class="modal">
-
-        <h2>Configuração do ciclo</h2>
-
-        <p>
-            O ciclo começa no dia escolhido e termina no dia anterior
-            do mês seguinte.
-        </p>
-
-        <label>
-            Dia de início
-            <input
-                id="startDay"
-                type="number"
-                min="1"
-                max="28"
-            >
-        </label>
-
-        <label>
-            Orçamento de Mistura
-            <input
-                id="budgetMistura"
-                type="number"
-                min=".01"
-                step=".01"
-            >
-        </label>
-
-        <label>
-            Orçamento Geral
-            <input
-                id="budgetGeral"
-                type="number"
-                min=".01"
-                step=".01"
-            >
-        </label>
-
-        <div class="modal-actions">
-
-            <button class="secondary" id="cancelModal">
-                Cancelar
-            </button>
-
-            <button class="primary" id="saveSettings">
-                Salvar
-            </button>
 
         </div>
 
     </div>
 
-</div>
+
+    <!-- =========================================================
+         CONFIRM MODAL
+    ========================================================== -->
+
+    <div
+        id="confirmModal"
+        class="modal-bg hidden">
+
+        <div class="modal">
+
+            <div class="modal-icon">
+                ⚠️
+            </div>
+
+            <h2 id="confirmTitle">
+                Confirmar ação
+            </h2>
+
+            <p id="confirmMessage">
+                Tem certeza?
+            </p>
 
 
-<div class="toast" id="toast"></div>
+            <div class="modal-actions">
 
-<script src="app.js"></script>
+                <button
+                    id="confirmCancelBtn"
+                    class="secondary"
+                    type="button">
+                    Cancelar
+                </button>
+
+                <button
+                    id="confirmOkBtn"
+                    class="danger-button"
+                    type="button">
+                    Confirmar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================================================
+         TOAST
+    ========================================================== -->
+
+    <div
+        id="toast"
+        class="toast">
+
+        <span id="toastIcon">✓</span>
+
+        <span id="toastMessage">
+            Operação realizada.
+        </span>
+
+    </div>
+
+
+    <script src="app.js"></script>
 
 </body>
 </html>

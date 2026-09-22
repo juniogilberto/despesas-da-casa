@@ -1,133 +1,232 @@
 "use strict";
 
 /* =========================================================
-   SUPABASE
+   CONFIGURAÇÃO SUPABASE
    ========================================================= */
 
 const SUPABASE_URL =
     "https://wbwqvtlirhllulnahjdx.supabase.co";
 
+/*
+ * COLE AQUI SUA CHAVE ANON/PUBLISHABLE DO SUPABASE.
+ *
+ * NÃO coloque aqui a service_role/secret key.
+ */
 const SUPABASE_KEY =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indid3F2dGxpcmhsbHVsbmFoamR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNDQxNzcsImV4cCI6MjEwNTYyMDE3N30.9PRA99X_if5jafFgnxuKSpRzojzB8zg7TI_XmR_lYXE";
 
+
+const SITE_URL =
+    "https://juniogilberto.github.io/despesas-da-casa/";
+
+
+const SESSION_STORAGE_KEY =
+    "house_expenses_session_v2";
+
+
 /* =========================================================
-   CONFIGURAÇÃO
+   ESTADO
    ========================================================= */
 
-const STORAGE_KEY = "house_expenses_session_v1";
+let session = null;
 
-const ICONS = [
-    "🥩","🍗","🐟","🥚","🍚","🫘","🥛","🍞",
-    "🥬","🥕","🍎","🧀","🥫","🧃","🧼","🧴",
-    "🧻","📦"
-];
-
-const DEFAULT_SETTINGS = {
-    startDay: 24,
-    budgets: {
-        mistura: 600,
-        geral: 400
-    }
-};
-
-const $ = id => document.getElementById(id);
-
-let session = loadSession();
 let state = {
-    settings: structuredClone(DEFAULT_SETTINGS),
+    settings: {
+        start_day: 24,
+        budget_mistura: 600,
+        budget_geral: 400
+    },
+
     expenses: []
 };
 
-let selectedCycle = null;
-let selectedIcon = "📦";
-let authMode = "login";
+
+let currentPage = "dashboard";
+
+let selectedExpenseIcon = "🛒";
+
+let selectedAvatar = "👤";
+
+let historyCycle = "current";
+
+let confirmCallback = null;
+
+let toastTimer = null;
 
 
 /* =========================================================
-   SESSÃO
+   ELEMENTOS
+   ========================================================= */
+
+const $ = (id) => document.getElementById(id);
+
+
+/* =========================================================
+   STORAGE DA SESSÃO
    ========================================================= */
 
 function loadSession() {
+
     try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
-    } catch {
+
+        const raw =
+            localStorage.getItem(SESSION_STORAGE_KEY);
+
+        if (!raw) {
+            return null;
+        }
+
+        return JSON.parse(raw);
+
+    } catch (error) {
+
+        console.error(
+            "Erro ao carregar sessão:",
+            error
+        );
+
+        localStorage.removeItem(
+            SESSION_STORAGE_KEY
+        );
+
         return null;
     }
 }
 
-function saveSession() {
-    if (session) {
-        localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(session)
+
+function saveSession(newSession) {
+
+    session = newSession;
+
+    if (!session) {
+
+        localStorage.removeItem(
+            SESSION_STORAGE_KEY
         );
+
+        return;
     }
+
+    localStorage.setItem(
+        SESSION_STORAGE_KEY,
+        JSON.stringify(session)
+    );
 }
+
 
 function clearSession() {
+
     session = null;
-    localStorage.removeItem(STORAGE_KEY);
+
+    localStorage.removeItem(
+        SESSION_STORAGE_KEY
+    );
 }
 
+
 function accessToken() {
-    return session?.access_token || "";
+
+    return session?.access_token || null;
 }
 
 
 /* =========================================================
-   API SUPABASE
+   SUPABASE REST
    ========================================================= */
 
 async function supabaseRequest(
     path,
     options = {}
 ) {
+
     const headers = {
         apikey: SUPABASE_KEY,
-        Accept: "application/json",
-        ...(options.headers || {})
+
+        ...(
+            options.headers || {}
+        )
     };
 
+
+    if (!headers["Content-Type"] &&
+        options.body) {
+
+        headers["Content-Type"] =
+            "application/json";
+    }
+
+
     if (accessToken()) {
-        headers.Authorization = `Bearer ${accessToken()}`;
-    } else {
-        headers.Authorization = `Bearer ${SUPABASE_KEY}`;
+
+        headers.Authorization =
+            `Bearer ${accessToken()}`;
     }
 
-    if (options.body !== undefined) {
-        headers["Content-Type"] = "application/json";
-    }
 
-    const response = await fetch(
-        `${SUPABASE_URL}${path}`,
-        {
-            ...options,
-            headers
-        }
-    );
+    const response =
+        await fetch(
+            `${SUPABASE_URL}${path}`,
+            {
+                ...options,
+                headers
+            }
+        );
 
-    const text = await response.text();
+
+    const text =
+        await response.text();
+
 
     let data = null;
 
+
     if (text) {
+
         try {
-            data = JSON.parse(text);
+
+            data =
+                JSON.parse(text);
+
         } catch {
+
             data = text;
         }
     }
 
+
     if (!response.ok) {
-        const message =
+
+        let message =
+            data?.msg ||
             data?.message ||
             data?.error_description ||
-            data?.hint ||
             data?.error ||
             `Erro HTTP ${response.status}`;
 
-        throw new Error(message);
+
+        if (
+            response.status === 401 &&
+            accessToken()
+        ) {
+
+            console.warn(
+                "Sessão possivelmente expirada."
+            );
+        }
+
+
+        const error =
+            new Error(message);
+
+        error.status =
+            response.status;
+
+        error.data =
+            data;
+
+        throw error;
     }
+
 
     return data;
 }
@@ -137,147 +236,135 @@ async function supabaseRequest(
    AUTENTICAÇÃO
    ========================================================= */
 
-async function login(email, password) {
-    const data = await supabaseRequest(
-        "/auth/v1/token?grant_type=password",
-        {
-            method: "POST",
-            body: JSON.stringify({
-                email,
-                password
-            })
-        }
-    );
+async function login(
+    email,
+    password
+) {
 
-    session = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_at:
-            Date.now() +
-            Number(data.expires_in || 3600) * 1000,
-        user: data.user
-    };
-
-    saveSession();
-
-    await loadCloudData();
-
-    hideAuth();
-
-    update();
-
-    toast("Login realizado.");
-}
-
-async function register(email, password) {
-    const data = await supabaseRequest(
-        "/auth/v1/signup",
-        {
-            method: "POST",
-            body: JSON.stringify({
-                email,
-                password
-            })
-        }
-    );
-
-    if (data.access_token) {
-        session = {
-            access_token: data.access_token,
-            refresh_token: data.refresh_token,
-            expires_at:
-                Date.now() +
-                Number(data.expires_in || 3600) * 1000,
-            user: data.user
-        };
-
-        saveSession();
-
-        await loadCloudData();
-
-        hideAuth();
-        update();
-
-        toast("Conta criada.");
-        return;
-    }
-
-    toast(
-        "Conta criada. Verifique seu e-mail para confirmar o cadastro."
-    );
-}
-
-async function refreshSession() {
-    if (!session?.refresh_token) {
-        clearSession();
-        return false;
-    }
-
-    try {
-        const data = await fetch(
-            `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+    const data =
+        await supabaseRequest(
+            "/auth/v1/token?grant_type=password",
             {
                 method: "POST",
-                headers: {
-                    apikey: SUPABASE_KEY,
-                    "Content-Type": "application/json"
-                },
+
                 body: JSON.stringify({
-                    refresh_token: session.refresh_token
+                    email,
+                    password
                 })
             }
         );
 
-        if (!data.ok) {
-            clearSession();
-            return false;
-        }
 
-        const result = await data.json();
+    saveSession(data);
 
-        session = {
-            access_token: result.access_token,
-            refresh_token: result.refresh_token,
-            expires_at:
-                Date.now() +
-                Number(result.expires_in || 3600) * 1000,
-            user: result.user || session.user
+    return data;
+}
+
+
+/* ---------------------------------------------------------
+   CADASTRO
+   --------------------------------------------------------- */
+
+async function register(
+    email,
+    password
+) {
+
+    const data =
+        await supabaseRequest(
+            "/auth/v1/signup",
+            {
+                method: "POST",
+
+                body: JSON.stringify({
+                    email,
+                    password
+                })
+            }
+        );
+
+
+    /*
+     * Como "Confirm email" está desativado no seu projeto,
+     * o Supabase deve retornar access_token.
+     *
+     * Mantemos também o suporte caso a confirmação volte
+     * a ser ativada posteriormente.
+     */
+
+    if (data?.access_token) {
+
+        saveSession(data);
+
+        return {
+            authenticated: true,
+            data
         };
+    }
 
-        saveSession();
+
+    return {
+        authenticated: false,
+        data
+    };
+}
+
+
+/* ---------------------------------------------------------
+   REFRESH
+   --------------------------------------------------------- */
+
+async function refreshSession() {
+
+    if (!session?.refresh_token) {
+        return false;
+    }
+
+
+    try {
+
+        const data =
+            await supabaseRequest(
+                "/auth/v1/token?grant_type=refresh_token",
+                {
+                    method: "POST",
+
+                    body: JSON.stringify({
+                        refresh_token:
+                            session.refresh_token
+                    })
+                }
+            );
+
+
+        saveSession(data);
 
         return true;
 
-    } catch {
+    } catch (error) {
+
+        console.warn(
+            "Não foi possível renovar a sessão:",
+            error
+        );
+
         clearSession();
+
         return false;
     }
 }
 
-async function ensureSession() {
-    if (!session?.access_token) {
-        showAuth();
-        return false;
-    }
 
-    if (
-        session.expires_at &&
-        Date.now() > session.expires_at - 60000
-    ) {
-        const refreshed = await refreshSession();
-
-        if (!refreshed) {
-            showAuth();
-            return false;
-        }
-    }
-
-    return true;
-}
+/* ---------------------------------------------------------
+   LOGOUT
+   --------------------------------------------------------- */
 
 async function logout() {
+
     try {
+
         if (accessToken()) {
+
             await supabaseRequest(
                 "/auth/v1/logout",
                 {
@@ -285,18 +372,24 @@ async function logout() {
                 }
             );
         }
-    } catch {
-        /* sessão será removida localmente mesmo se a API falhar */
+
+    } catch (error) {
+
+        console.warn(
+            "Logout remoto:",
+            error
+        );
+
+    } finally {
+
+        clearSession();
+
+        state.expenses = [];
+
+        showAuthModal();
+
+        closeMobileSidebar();
     }
-
-    clearSession();
-
-    state = {
-        settings: structuredClone(DEFAULT_SETTINGS),
-        expenses: []
-    };
-
-    showAuth();
 }
 
 
@@ -304,94 +397,440 @@ async function logout() {
    RECUPERAÇÃO DE SENHA
    ========================================================= */
 
-async function resetPassword(email) {
-    if (!email) {
-        toast("Informe seu e-mail.");
-        return;
-    }
+/*
+ * IMPORTANTE:
+ *
+ * O Supabase envia o usuário de volta para:
+ *
+ * https://juniogilberto.github.io/despesas-da-casa/
+ *
+ * O token vem no HASH da URL.
+ *
+ * Exemplo:
+ *
+ * #access_token=...&refresh_token=...&type=recovery
+ *
+ * Não criamos uma página /reset-password.
+ * Por isso o GitHub Pages não retorna 404.
+ */
+
+
+/* ---------------------------------------------------------
+   ENVIA E-MAIL DE RECUPERAÇÃO
+   --------------------------------------------------------- */
+
+async function sendPasswordRecovery(
+    email
+) {
 
     await supabaseRequest(
         "/auth/v1/recover",
         {
             method: "POST",
+
             body: JSON.stringify({
-                email
+                email,
+
+                redirect_to:
+                    SITE_URL
             })
         }
     );
+}
 
-    toast("E-mail de recuperação enviado.");
+
+/* ---------------------------------------------------------
+   LÊ TOKEN DE RECUPERAÇÃO
+   --------------------------------------------------------- */
+
+function parseRecoveryFromHash() {
+
+    const hash =
+        window.location.hash;
+
+
+    if (!hash) {
+        return null;
+    }
+
+
+    const params =
+        new URLSearchParams(
+            hash.replace(/^#/, "")
+        );
+
+
+    const type =
+        params.get("type");
+
+
+    const accessTokenFromHash =
+        params.get("access_token");
+
+
+    const refreshTokenFromHash =
+        params.get("refresh_token");
+
+
+    if (
+        type !== "recovery" ||
+        !accessTokenFromHash
+    ) {
+
+        return null;
+    }
+
+
+    return {
+        access_token:
+            accessTokenFromHash,
+
+        refresh_token:
+            refreshTokenFromHash || "",
+
+        token_type:
+            params.get("token_type") || "bearer",
+
+        expires_in:
+            Number(
+                params.get("expires_in") || 3600
+            ),
+
+        type
+    };
+}
+
+
+/* ---------------------------------------------------------
+   INICIA RECUPERAÇÃO
+   --------------------------------------------------------- */
+
+async function handleRecoveryRedirect() {
+
+    const recovery =
+        parseRecoveryFromHash();
+
+
+    if (!recovery) {
+        return false;
+    }
+
+
+    /*
+     * Guardamos o token recebido pelo Supabase.
+     */
+
+    saveSession(recovery);
+
+
+    /*
+     * Limpa o token da barra de endereço.
+     * O token continua no localStorage.
+     */
+
+    try {
+
+        window.history.replaceState(
+            {},
+            document.title,
+            SITE_URL
+        );
+
+    } catch (error) {
+
+        console.warn(
+            "Não foi possível limpar a URL:",
+            error
+        );
+    }
+
+
+    /*
+     * Abre o modal para nova senha.
+     */
+
+    hideAuthModal();
+
+    $("passwordResetModal")
+        ?.classList.remove("hidden");
+
+
+    return true;
+}
+
+
+/* ---------------------------------------------------------
+   ALTERAR SENHA DURANTE RECOVERY
+   --------------------------------------------------------- */
+
+async function updatePassword(
+    password
+) {
+
+    if (!accessToken()) {
+
+        throw new Error(
+            "A sessão de recuperação expirou. Solicite um novo e-mail."
+        );
+    }
+
+
+    const data =
+        await supabaseRequest(
+            "/auth/v1/user",
+            {
+                method: "PUT",
+
+                body: JSON.stringify({
+                    password
+                })
+            }
+        );
+
+
+    /*
+     * O token continua válido.
+     * Atualizamos o usuário local se o Supabase
+     * retornar os dados.
+     */
+
+    if (data?.id) {
+
+        session.user =
+            data;
+
+        saveSession(session);
+    }
+
+
+    return data;
 }
 
 
 /* =========================================================
-   DADOS
+   USUÁRIO / PERFIL
+   ========================================================= */
+
+function currentUser() {
+
+    return session?.user || null;
+}
+
+
+function userName() {
+
+    const user =
+        currentUser();
+
+
+    return (
+        user?.user_metadata?.name ||
+        user?.user_metadata?.full_name ||
+        user?.email?.split("@")[0] ||
+        "Usuário"
+    );
+}
+
+
+function userAvatar() {
+
+    const user =
+        currentUser();
+
+
+    return (
+        user?.user_metadata?.avatar ||
+        "👤"
+    );
+}
+
+
+/* ---------------------------------------------------------
+   ATUALIZAR PERFIL
+   --------------------------------------------------------- */
+
+async function updateProfile(
+    name,
+    avatar
+) {
+
+    const data =
+        await supabaseRequest(
+            "/auth/v1/user",
+            {
+                method: "PUT",
+
+                body: JSON.stringify({
+                    data: {
+                        name,
+                        avatar
+                    }
+                })
+            }
+        );
+
+
+    if (data) {
+
+        session.user =
+            data;
+
+        saveSession(session);
+    }
+
+
+    return data;
+}
+
+
+/* =========================================================
+   DADOS CLOUD
    ========================================================= */
 
 async function loadCloudData() {
-    if (!(await ensureSession())) return;
 
-    const [expenses, settings] = await Promise.all([
-        supabaseRequest(
-            "/rest/v1/expenses?select=*&order=date.desc"
-        ),
+    /*
+     * Configurações
+     */
 
-        supabaseRequest(
-            "/rest/v1/settings?select=*&limit=1"
-        )
-    ]);
-
-    state.expenses = (expenses || []).map(expense => ({
-        id: expense.id,
-        desc: expense.description,
-        amount: Number(expense.amount),
-        category: expense.category,
-        icon: expense.icon || "📦",
-        date: expense.date
-    }));
-
-    if (settings?.length) {
-        const data = settings[0];
-
-        state.settings = {
-            startDay: Number(data.start_day),
-            budgets: {
-                mistura: Number(data.budget_mistura),
-                geral: Number(data.budget_geral)
+    const settings =
+        await supabaseRequest(
+            "/rest/v1/settings?select=*&limit=1",
+            {
+                method: "GET"
             }
-        };
-    } else {
-        state.settings = structuredClone(
-            DEFAULT_SETTINGS
         );
 
-        await saveCloudSettings();
+
+    if (
+        Array.isArray(settings) &&
+        settings.length > 0
+    ) {
+
+        state.settings = {
+            start_day:
+                Number(
+                    settings[0].start_day
+                ),
+
+            budget_mistura:
+                Number(
+                    settings[0].budget_mistura
+                ),
+
+            budget_geral:
+                Number(
+                    settings[0].budget_geral
+                )
+        };
+
+    } else {
+
+        /*
+         * Primeiro acesso:
+         * cria configuração padrão.
+         */
+
+        await saveCloudSettings(
+            state.settings
+        );
     }
+
+
+    /*
+     * Gastos
+     */
+
+    const expenses =
+        await supabaseRequest(
+            "/rest/v1/expenses?select=*&order=date.desc",
+            {
+                method: "GET"
+            }
+        );
+
+
+    state.expenses =
+        Array.isArray(expenses)
+            ? expenses.map(normalizeExpense)
+            : [];
 }
 
-async function saveCloudSettings() {
-    if (!(await ensureSession())) return;
 
-    const userId = session.user.id;
+/* ---------------------------------------------------------
+   NORMALIZA GASTO
+   --------------------------------------------------------- */
+
+function normalizeExpense(expense) {
+
+    return {
+        id:
+            expense.id,
+
+        description:
+            expense.description || "",
+
+        amount:
+            Number(expense.amount || 0),
+
+        category:
+            expense.category === "geral"
+                ? "geral"
+                : "mistura",
+
+        icon:
+            expense.icon || "🛒",
+
+        date:
+            expense.date ||
+            expense.created_at ||
+            new Date().toISOString()
+    };
+}
+
+
+/* ---------------------------------------------------------
+   SALVA CONFIGURAÇÕES
+   --------------------------------------------------------- */
+
+async function saveCloudSettings(
+    settings
+) {
+
+    const payload = {
+        user_id:
+            currentUser().id,
+
+        start_day:
+            Number(settings.start_day),
+
+        budget_mistura:
+            Number(settings.budget_mistura),
+
+        budget_geral:
+            Number(settings.budget_geral)
+    };
+
 
     await supabaseRequest(
         "/rest/v1/settings?on_conflict=user_id",
         {
             method: "POST",
+
             headers: {
-                Prefer: "resolution=merge-duplicates,return=minimal"
+                Prefer:
+                    "resolution=merge-duplicates,return=minimal"
             },
-            body: JSON.stringify({
-                user_id: userId,
-                start_day: state.settings.startDay,
-                budget_mistura:
-                    state.settings.budgets.mistura,
-                budget_geral:
-                    state.settings.budgets.geral,
-                updated_at: new Date().toISOString()
-            })
+
+            body:
+                JSON.stringify(payload)
         }
     );
+
+
+    state.settings = {
+        ...settings
+    };
 }
 
 
@@ -399,61 +838,122 @@ async function saveCloudSettings() {
    DESPESAS
    ========================================================= */
 
-async function addExpense(expense) {
-    if (!(await ensureSession())) return;
+async function addExpense(
+    description,
+    amount,
+    category,
+    icon
+) {
 
-    const result = await supabaseRequest(
-        "/rest/v1/expenses",
-        {
-            method: "POST",
-            headers: {
-                Prefer: "return=representation"
-            },
-            body: JSON.stringify({
-                user_id: session.user.id,
-                description: expense.desc,
-                amount: expense.amount,
-                category: expense.category,
-                icon: expense.icon,
-                date: expense.date
-            })
-        }
+    const payload = {
+        user_id:
+            currentUser().id,
+
+        description:
+            description.trim(),
+
+        amount:
+            Number(amount),
+
+        category,
+
+        icon,
+
+        date:
+            new Date().toISOString()
+    };
+
+
+    const data =
+        await supabaseRequest(
+            "/rest/v1/expenses",
+            {
+                method: "POST",
+
+                headers: {
+                    Prefer:
+                        "return=representation"
+                },
+
+                body:
+                    JSON.stringify(payload)
+            }
+        );
+
+
+    const created =
+        Array.isArray(data)
+            ? data[0]
+            : data;
+
+
+    state.expenses.unshift(
+        normalizeExpense(created)
     );
 
-    const saved = result?.[0];
 
-    if (!saved) {
-        throw new Error(
-            "O Supabase não retornou o gasto salvo."
-        );
-    }
-
-    state.expenses.push({
-        id: saved.id,
-        desc: saved.description,
-        amount: Number(saved.amount),
-        category: saved.category,
-        icon: saved.icon || "📦",
-        date: saved.date
-    });
+    return created;
 }
 
-async function deleteExpense(id) {
-    if (!(await ensureSession())) return;
+
+/* ---------------------------------------------------------
+   DELETE
+   --------------------------------------------------------- */
+
+async function deleteExpense(
+    id
+) {
 
     await supabaseRequest(
         `/rest/v1/expenses?id=eq.${encodeURIComponent(id)}`,
         {
-            method: "DELETE"
+            method: "DELETE",
+
+            headers: {
+                Prefer:
+                    "return=minimal"
+            }
         }
     );
 
-    state.expenses = state.expenses.filter(
-        expense => String(expense.id) !== String(id)
+
+    state.expenses =
+        state.expenses.filter(
+            expense =>
+                expense.id !== id
+        );
+}
+
+
+/* ---------------------------------------------------------
+   DELETE TODOS
+   --------------------------------------------------------- */
+
+async function deleteAllExpenses() {
+
+    const user =
+        currentUser();
+
+
+    if (!user) {
+        return;
+    }
+
+
+    await supabaseRequest(
+        `/rest/v1/expenses?user_id=eq.${encodeURIComponent(user.id)}`,
+        {
+            method: "DELETE",
+
+            headers: {
+                Prefer:
+                    "return=minimal"
+            }
+        }
     );
 
-    update();
-    toast("Compra removida.");
+
+    state.expenses = [];
 }
 
 
@@ -462,47 +962,80 @@ async function deleteExpense(id) {
    ========================================================= */
 
 function money(value) {
-    return Number(value).toLocaleString(
+
+    return new Intl.NumberFormat(
         "pt-BR",
         {
             style: "currency",
             currency: "BRL"
         }
+    ).format(
+        Number(value) || 0
     );
 }
 
-function toast(message) {
-    const el = $("toast");
-
-    el.textContent = message;
-    el.classList.add("show");
-
-    clearTimeout(toast.timer);
-
-    toast.timer = setTimeout(
-        () => el.classList.remove("show"),
-        2200
-    );
-}
 
 function dateOnly(date) {
-    date = new Date(date);
+
+    const d =
+        new Date(date);
+
 
     return new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
+        d.getFullYear(),
+        d.getMonth(),
+        d.getDate()
     );
 }
+
 
 function formatDate(date) {
-    return new Date(date).toLocaleDateString(
-        "pt-BR"
+
+    const d =
+        new Date(date);
+
+
+    if (Number.isNaN(d.getTime())) {
+        return "Data inválida";
+    }
+
+
+    return d.toLocaleDateString(
+        "pt-BR",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
     );
 }
 
-function escapeHTML(text) {
-    return String(text)
+
+function formatDateTime(date) {
+
+    const d =
+        new Date(date);
+
+
+    if (Number.isNaN(d.getTime())) {
+        return "Data inválida";
+    }
+
+
+    return d.toLocaleDateString(
+        "pt-BR",
+        {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+        }
+    );
+}
+
+
+function escapeHTML(value) {
+
+    return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -512,1042 +1045,2579 @@ function escapeHTML(text) {
 
 
 /* =========================================================
-   ÍCONES
+   TOAST
    ========================================================= */
 
-function autoIcon(text) {
-    const map = {
-        carne: "🥩",
-        bife: "🥩",
-        picanha: "🥩",
-        frango: "🍗",
-        galinha: "🍗",
-        peixe: "🐟",
-        ovo: "🥚",
-        arroz: "🍚",
-        feijão: "🫘",
-        leite: "🥛",
-        pão: "🍞",
-        padaria: "🍞",
-        alface: "🥬",
-        couve: "🥬",
-        batata: "🥕",
-        cenoura: "🥕",
-        tomate: "🥕",
-        banana: "🍎",
-        maçã: "🍎",
-        laranja: "🍎",
-        queijo: "🧀",
-        bebida: "🧃",
-        refrigerante: "🧃",
-        suco: "🧃",
-        água: "🧃",
-        sabão: "🧼",
-        detergente: "🧼",
-        limpeza: "🧼",
-        desinfetante: "🧼",
-        shampoo: "🧴",
-        higiene: "🧴",
-        papel: "🧻",
-        higiênico: "🧻",
-        guardanapo: "🧻"
-    };
+function toast(
+    message,
+    type = "success"
+) {
 
-    const lower = text.toLowerCase();
+    const element =
+        $("toast");
+
+
+    if (!element) {
+        return;
+    }
+
+
+    $("toastMessage").textContent =
+        message;
+
+
+    $("toastIcon").textContent =
+        type === "error"
+            ? "!"
+            : "✓";
+
+
+    element.classList.toggle(
+        "error",
+        type === "error"
+    );
+
+
+    element.classList.add(
+        "show"
+    );
+
+
+    clearTimeout(
+        toastTimer
+    );
+
+
+    toastTimer =
+        setTimeout(
+            () => {
+
+                element.classList.remove(
+                    "show"
+                );
+
+            },
+            3500
+        );
+}
+
+
+/* =========================================================
+   CICLO
+   ========================================================= */
+
+function getCycleStart(
+    referenceDate = new Date()
+) {
+
+    const startDay =
+        Number(
+            state.settings.start_day
+        );
+
+
+    const current =
+        new Date(referenceDate);
+
+
+    current.setHours(
+        0,
+        0,
+        0,
+        0
+    );
+
+
+    let year =
+        current.getFullYear();
+
+
+    let month =
+        current.getMonth();
+
+
+    if (
+        current.getDate() <
+        startDay
+    ) {
+
+        month--;
+
+        if (month < 0) {
+
+            month = 11;
+            year--;
+        }
+    }
+
+
+    return new Date(
+        year,
+        month,
+        startDay,
+        0,
+        0,
+        0,
+        0
+    );
+}
+
+
+function getNextCycleStart(
+    referenceDate = new Date()
+) {
+
+    const start =
+        getCycleStart(
+            referenceDate
+        );
+
+
+    let year =
+        start.getFullYear();
+
+    let month =
+        start.getMonth() + 1;
+
+
+    if (month > 11) {
+
+        month = 0;
+        year++;
+    }
+
+
+    return new Date(
+        year,
+        month,
+        state.settings.start_day,
+        0,
+        0,
+        0,
+        0
+    );
+}
+
+
+function isInCurrentCycle(
+    date
+) {
+
+    const value =
+        new Date(date);
+
+
+    const start =
+        getCycleStart();
+
+
+    const end =
+        getNextCycleStart();
+
 
     return (
-        Object.entries(map).find(
-            ([key]) => lower.includes(key)
-        )?.[1] || "📦"
-    );
-}
-
-function renderIcons() {
-    $("iconPicker").innerHTML = ICONS.map(icon => `
-        <button
-            type="button"
-            class="${icon === selectedIcon ? "active" : ""}"
-            data-icon="${icon}">
-            ${icon}
-        </button>
-    `).join("");
-}
-
-
-/* =========================================================
-   CICLOS
-   ========================================================= */
-
-function cycleForDate(input) {
-    const date = dateOnly(input);
-    const day = state.settings.startDay;
-
-    const start = new Date(
-        date.getFullYear(),
-        date.getMonth() -
-            (date.getDate() < day ? 1 : 0),
-        day
-    );
-
-    const end = new Date(
-        start.getFullYear(),
-        start.getMonth() + 1,
-        day - 1
-    );
-
-    return {
-        id:
-            `${start.getFullYear()}-` +
-            `${String(start.getMonth() + 1).padStart(2, "0")}`,
-
-        start,
-        end,
-
-        label:
-            `Referente a ${end.toLocaleDateString(
-                "pt-BR",
-                {
-                    month: "long",
-                    year: "numeric"
-                }
-            )}`
-    };
-}
-
-function currentCycle() {
-    return cycleForDate(new Date());
-}
-
-function expensesOf(cycle) {
-    return state.expenses.filter(
-        expense =>
-            cycleForDate(expense.date).id ===
-            cycle.id
-    );
-}
-
-function totals(expenses) {
-    return expenses.reduce(
-        (result, expense) => {
-            result[expense.category] +=
-                Number(expense.amount);
-
-            return result;
-        },
-        {
-            mistura: 0,
-            geral: 0
-        }
-    );
-}
-
-function cycles() {
-    const map = new Map();
-    const current = currentCycle();
-
-    map.set(current.id, current);
-
-    state.expenses.forEach(expense => {
-        const cycle = cycleForDate(expense.date);
-
-        map.set(cycle.id, cycle);
-    });
-
-    return [...map.values()].sort(
-        (a, b) => b.start - a.start
+        value >= start &&
+        value < end
     );
 }
 
 
-/* =========================================================
-   NAVEGAÇÃO
-   ========================================================= */
+function getCycleLabel() {
 
-const pages = document.querySelectorAll(".page");
-const navButtons =
-    document.querySelectorAll(".nav-btn");
+    const start =
+        getCycleStart();
 
-function showPage(page) {
-    pages.forEach(el => {
-        el.classList.toggle(
-            "active",
-            el.id === page
-        );
-    });
 
-    navButtons.forEach(el => {
-        el.classList.toggle(
-            "active",
-            el.dataset.page === page
-        );
-    });
+    const end =
+        getNextCycleStart();
 
-    closeMenu();
 
-    if (page === "history") {
-        renderHistory();
-    }
+    const endDisplay =
+        new Date(end);
 
-    if (page === "settings") {
-        syncSettings();
-    }
+    endDisplay.setDate(
+        endDisplay.getDate() - 1
+    );
+
+
+    return (
+        `${start.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit"
+        })} – ${endDisplay.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "2-digit"
+        })}`
+    );
 }
 
-navButtons.forEach(button => {
-    button.onclick = () =>
-        showPage(button.dataset.page);
-});
 
-function openMenu() {
-    $("sidebar").classList.add("open");
-    $("overlay").classList.add("show");
+function getDaysRemaining() {
+
+    const now =
+        new Date();
+
+
+    const end =
+        getNextCycleStart();
+
+
+    const diff =
+        end.getTime() -
+        now.getTime();
+
+
+    return Math.max(
+        0,
+        Math.ceil(
+            diff / 86400000
+        )
+    );
 }
-
-function closeMenu() {
-    $("sidebar").classList.remove("open");
-    $("overlay").classList.remove("show");
-}
-
-$("menuBtn").onclick = openMenu;
-$("overlay").onclick = closeMenu;
 
 
 /* =========================================================
    DASHBOARD
    ========================================================= */
 
-function renderDashboard() {
-    const cycle = currentCycle();
-    const data = totals(expensesOf(cycle));
+function currentCycleExpenses() {
 
-    const budget =
-        state.settings.budgets.mistura +
-        state.settings.budgets.geral;
+    return state.expenses.filter(
+        expense =>
+            isInCurrentCycle(
+                expense.date
+            )
+    );
+}
+
+
+function calculateDashboard() {
+
+    const expenses =
+        currentCycleExpenses();
+
+
+    let mistura = 0;
+    let geral = 0;
+
+
+    for (const expense of expenses) {
+
+        if (
+            expense.category === "mistura"
+        ) {
+
+            mistura +=
+                expense.amount;
+
+        } else {
+
+            geral +=
+                expense.amount;
+        }
+    }
+
 
     const spent =
+        mistura + geral;
+
+
+    const budgetMistura =
+        Number(
+            state.settings.budget_mistura
+        ) || 0;
+
+
+    const budgetGeral =
+        Number(
+            state.settings.budget_geral
+        ) || 0;
+
+
+    const budget =
+        budgetMistura +
+        budgetGeral;
+
+
+    const balance =
+        budget - spent;
+
+
+    const progress =
+        budget > 0
+            ? Math.min(
+                100,
+                (spent / budget) * 100
+            )
+            : 0;
+
+
+    return {
+        expenses,
+        mistura,
+        geral,
+        spent,
+        budgetMistura,
+        budgetGeral,
+        budget,
+        balance,
+        progress
+    };
+}
+
+
+/* ---------------------------------------------------------
+   RENDER DASHBOARD
+   --------------------------------------------------------- */
+
+function renderDashboard() {
+
+    const data =
+        calculateDashboard();
+
+
+    $("dashboardBudget").textContent =
+        money(data.budget);
+
+
+    $("dashboardSpent").textContent =
+        money(data.spent);
+
+
+    $("dashboardBalance").textContent =
+        money(data.balance);
+
+
+    $("dashboardDays").textContent =
+        String(
+            getDaysRemaining()
+        );
+
+
+    $("progressText").textContent =
+        `${Math.round(data.progress)}% utilizado`;
+
+
+    $("progressPercent").textContent =
+        `${Math.round(data.progress)}%`;
+
+
+    $("progressBar").style.width =
+        `${data.progress}%`;
+
+
+    $("progressSpent").textContent =
+        money(data.spent);
+
+
+    $("progressBudget").textContent =
+        money(data.budget);
+
+
+    $("legendMistura").textContent =
+        money(data.mistura);
+
+
+    $("legendGeral").textContent =
+        money(data.geral);
+
+
+    $("donutTotal").textContent =
+        money(data.spent);
+
+
+    renderDonut(data);
+
+    renderCategory(
+        "mistura",
+        data.mistura,
+        data.budgetMistura
+    );
+
+    renderCategory(
+        "geral",
+        data.geral,
+        data.budgetGeral
+    );
+
+
+    $("cycleLabel").textContent =
+        getCycleLabel();
+}
+
+
+/* ---------------------------------------------------------
+   DONUT
+   --------------------------------------------------------- */
+
+function renderDonut(data) {
+
+    const donut =
+        $("expenseDonut");
+
+
+    if (!donut) {
+        return;
+    }
+
+
+    const total =
         data.mistura +
         data.geral;
 
-    const balance = budget - spent;
 
-    const percent = budget
-        ? Math.min(
-            100,
-            spent / budget * 100
-        )
-        : 0;
+    if (total <= 0) {
 
-    const days = Math.max(
-        0,
-        Math.ceil(
-            (
-                dateOnly(cycle.end) -
-                dateOnly(new Date())
-            ) / 86400000
-        )
-    );
+        donut.style.background =
+            "conic-gradient(var(--surface-2) 0deg 360deg)";
 
-    $("cycleName").textContent =
-        cycle.label;
-
-    $("cycleDates").textContent =
-        `${formatDate(cycle.start)} → ` +
-        `${formatDate(cycle.end)}`;
-
-    $("heroTotal").textContent =
-        money(spent);
-
-    $("heroBudget").textContent =
-        money(budget);
-
-    $("heroLeft").textContent =
-        money(Math.abs(balance));
-
-    $("heroLeftLabel").textContent =
-        balance >= 0
-            ? "restante"
-            : "acima do orçamento";
-
-    $("heroProgress").style.width =
-        `${percent}%`;
-
-    $("heroProgress").style.background =
-        balance < 0
-            ? "#ef4444"
-            : "";
-
-    $("heroStatus").textContent =
-        balance < 0
-            ? "● Orçamento ultrapassado"
-            : `● ${days} ${
-                days === 1 ? "dia" : "dias"
-            } até o fechamento`;
-
-    $("donutPercent").textContent =
-        `${Math.round(percent)}%`;
-
-    $("donutFill").style.strokeDashoffset =
-        440 - 440 * percent / 100;
-
-    $("donutFill").style.stroke =
-        balance < 0
-            ? "#ef4444"
-            : "";
-
-    $("legendBalance").textContent =
-        money(Math.abs(balance));
-
-    $("legendSpent").textContent =
-        money(spent);
-
-    $("legendAvailable").textContent =
-        money(Math.max(0, balance));
-
-    $("misturaValue").textContent =
-        money(data.mistura);
-
-    $("geralValue").textContent =
-        money(data.geral);
-
-    setBalanceDetail(
-        "misturaDetail",
-        state.settings.budgets.mistura -
-        data.mistura
-    );
-
-    setBalanceDetail(
-        "geralDetail",
-        state.settings.budgets.geral -
-        data.geral
-    );
-
-    $("daysLeft").textContent =
-        days;
-
-    $("daysDetail").textContent =
-        `Fechamento: ${formatDate(cycle.end)}`;
-}
-
-function setBalanceDetail(id, balance) {
-    $(id).textContent =
-        `${money(Math.abs(balance))} ` +
-        `${balance >= 0 ? "restante" : "acima"}`;
-}
-
-
-/* =========================================================
-   HISTÓRICO
-   ========================================================= */
-
-function renderHistory() {
-    const list = cycles();
-    const current = currentCycle();
-
-    if (
-        !selectedCycle ||
-        !list.some(
-            cycle => cycle.id === selectedCycle
-        )
-    ) {
-        selectedCycle = current.id;
+        return;
     }
 
-    renderCycleTabs(list, current);
 
-    const cycle = list.find(
-        cycle => cycle.id === selectedCycle
-    );
+    const misturaDegrees =
+        (data.mistura / total) *
+        360;
 
-    const all = expensesOf(cycle);
 
-    const query =
-        $("search").value
-            .trim()
-            .toLowerCase();
+    donut.style.background =
+        `conic-gradient(
+            var(--mistura) 0deg ${misturaDegrees}deg,
+            var(--geral) ${misturaDegrees}deg 360deg
+        )`;
+}
 
-    const filter =
-        $("filter").value;
 
-    const expenses = all
-        .filter(expense =>
-            (
-                !query ||
-                expense.desc
-                    .toLowerCase()
-                    .includes(query)
-            ) &&
-            (
-                filter === "all" ||
-                expense.category === filter
+/* ---------------------------------------------------------
+   CATEGORY
+   --------------------------------------------------------- */
+
+function renderCategory(
+    category,
+    spent,
+    budget
+) {
+
+    const percent =
+        budget > 0
+            ? Math.min(
+                100,
+                (spent / budget) * 100
             )
-        )
-        .sort(
-            (a, b) =>
-                new Date(b.date) -
-                new Date(a.date)
-        );
+            : 0;
 
-    renderCycleSummary(
-        cycle,
-        current,
-        all
-    );
 
-    renderExpenseList(
-        expenses,
-        all.length
-    );
-}
+    const text =
+        category === "mistura"
+            ? $("categoryMisturaText")
+            : $("categoryGeralText");
 
-function renderCycleTabs(list, current) {
-    $("cycleTabs").innerHTML =
-        list.map(cycle => `
-            <button
-                class="${cycle.id === selectedCycle
-                    ? "active"
-                    : ""}"
-                data-cycle="${cycle.id}">
 
-                <strong>
-                    ${
-                        cycle.id === current.id
-                            ? "Atual"
-                            : cycle.label
-                    }
-                </strong>
+    const bar =
+        category === "mistura"
+            ? $("categoryMisturaBar")
+            : $("categoryGeralBar");
 
-                <small>
-                    ${formatDate(cycle.start)}
-                    →
-                    ${formatDate(cycle.end)}
-                </small>
 
-            </button>
-        `).join("");
-}
+    if (text) {
 
-$("cycleTabs").onclick = event => {
-    const button =
-        event.target.closest("button");
-
-    if (!button) return;
-
-    selectedCycle =
-        button.dataset.cycle;
-
-    renderHistory();
-};
-
-function renderCycleSummary(
-    cycle,
-    current,
-    expenses
-) {
-    const total = totals(expenses);
-
-    const balance =
-        state.settings.budgets.mistura +
-        state.settings.budgets.geral -
-        total.mistura -
-        total.geral;
-
-    $("selectedCycleSummary").innerHTML = `
-        <div class="summary">
-
-            <div>
-
-                <strong>
-                    ${cycle.label}
-                    ${
-                        cycle.id === current.id
-                            ? " • Em andamento"
-                            : " • Fechado"
-                    }
-                </strong>
-
-                <small>
-                    ${expenses.length}
-                    ${
-                        expenses.length === 1
-                            ? "compra"
-                            : "compras"
-                    }
-                </small>
-
-            </div>
-
-            <div class="${
-                balance >= 0
-                    ? "positive"
-                    : "negative"
-            } balance">
-
-                ${money(Math.abs(balance))}
-
-                <small>
-                    ${
-                        balance >= 0
-                            ? "saldo"
-                            : "excedente"
-                    }
-                </small>
-
-            </div>
-
-        </div>
-    `;
-
-    $("footerInfo").textContent =
-        cycle.id === current.id
-            ? "Ciclo em andamento."
-            : `Fechado em ${formatDate(cycle.end)}.`;
-}
-
-function renderExpenseList(
-    expenses,
-    total
-) {
-    if (!expenses.length) {
-        $("expenseList").innerHTML = `
-            <li class="empty">
-                ${
-                    total
-                        ? "Nenhum resultado encontrado."
-                        : "Nenhuma compra neste ciclo."
-                }
-            </li>
-        `;
-
-        return;
+        text.textContent =
+            `${money(spent)} / ${money(budget)}`;
     }
 
-    $("expenseList").innerHTML =
-        expenses.map(expense => `
-            <li class="expense">
 
-                <div class="expense-left">
+    if (bar) {
 
-                    <div class="expense-icon">
-                        ${
-                            expense.icon ||
-                            autoIcon(expense.desc)
-                        }
-                    </div>
-
-                    <div>
-
-                        <div class="expense-name">
-                            ${escapeHTML(expense.desc)}
-                        </div>
-
-                        <div class="expense-meta">
-                            ${
-                                expense.category ===
-                                "mistura"
-                                    ? "Mistura"
-                                    : "Geral"
-                            }
-                            •
-                            ${formatDate(expense.date)}
-                        </div>
-
-                    </div>
-
-                </div>
-
-                <div class="expense-right">
-
-                    <b>
-                        ${money(expense.amount)}
-                    </b>
-
-                    <button
-                        class="delete"
-                        data-id="${expense.id}">
-                        ✕
-                    </button>
-
-                </div>
-
-            </li>
-        `).join("");
+        bar.style.width =
+            `${percent}%`;
+    }
 }
 
-$("expenseList").onclick = async event => {
-    const button =
-        event.target.closest(".delete");
 
-    if (!button) return;
+/* =========================================================
+   NAVIGATION
+   ========================================================= */
+
+const pageTitles = {
+
+    dashboard: {
+        title: "Resumo",
+        subtitle:
+            "Visão geral das suas despesas"
+    },
+
+    add: {
+        title: "Adicionar gasto",
+        subtitle:
+            "Registre uma nova despesa"
+    },
+
+    history: {
+        title: "Histórico",
+        subtitle:
+            "Todos os seus gastos registrados"
+    },
+
+    profile: {
+        title: "Perfil",
+        subtitle:
+            "Gerencie seus dados pessoais"
+    },
+
+    settings: {
+        title: "Configurações",
+        subtitle:
+            "Personalize seu controle financeiro"
+    }
+};
+
+
+function navigate(
+    page
+) {
 
     if (
-        !confirm(
-            "Excluir este gasto?"
-        )
+        !pageTitles[page]
     ) {
+        page = "dashboard";
+    }
+
+
+    currentPage =
+        page;
+
+
+    document
+        .querySelectorAll(".page")
+        .forEach(
+            element => {
+
+                element.classList.toggle(
+                    "active",
+                    element.id ===
+                        `page-${page}`
+                );
+            }
+        );
+
+
+    document
+        .querySelectorAll(".nav-item")
+        .forEach(
+            element => {
+
+                element.classList.toggle(
+                    "active",
+                    element.dataset.page ===
+                        page
+                );
+            }
+        );
+
+
+    const info =
+        pageTitles[page];
+
+
+    $("pageTitle").textContent =
+        info.title;
+
+
+    $("pageSubtitle").textContent =
+        info.subtitle;
+
+
+    closeMobileSidebar();
+
+
+    if (page === "dashboard") {
+
+        renderDashboard();
+    }
+
+
+    if (page === "history") {
+
+        renderHistory();
+    }
+
+
+    if (page === "profile") {
+
+        renderProfile();
+    }
+
+
+    if (page === "settings") {
+
+        renderSettings();
+    }
+}
+
+
+/* =========================================================
+   SIDEBAR MOBILE
+   ========================================================= */
+
+function openMobileSidebar() {
+
+    $("sidebar")
+        ?.classList.add("open");
+
+    $("sidebarOverlay")
+        ?.classList.add("visible");
+
+    document.body.style.overflow =
+        "hidden";
+}
+
+
+function closeMobileSidebar() {
+
+    $("sidebar")
+        ?.classList.remove("open");
+
+    $("sidebarOverlay")
+        ?.classList.remove("visible");
+
+    document.body.style.overflow =
+        "";
+}
+
+
+/* =========================================================
+   PROFILE UI
+   ========================================================= */
+
+function renderProfile() {
+
+    const user =
+        currentUser();
+
+
+    if (!user) {
         return;
     }
 
-    try {
-        await deleteExpense(
-            button.dataset.id
-        );
-    } catch (error) {
-        console.error(error);
-        toast(
-            "Não foi possível excluir o gasto."
-        );
-    }
-};
+
+    const name =
+        userName();
 
 
-/* =========================================================
-   ADICIONAR GASTO
-   ========================================================= */
+    const avatar =
+        userAvatar();
 
-$("iconPicker").onclick = event => {
-    const button =
-        event.target.closest("button");
 
-    if (!button) return;
+    const email =
+        user.email || "—";
 
-    selectedIcon =
-        button.dataset.icon;
 
-    renderIcons();
-};
+    $("profileName").textContent =
+        name;
 
-$("expenseForm").onsubmit =
-    async event => {
-        event.preventDefault();
 
-        const desc =
-            $("desc").value.trim();
+    $("profileEmail").textContent =
+        email;
 
-        const amount =
-            Number($("amount").value);
 
-        const category =
-            $("category").value;
+    $("profileViewName").textContent =
+        name;
 
-        if (
-            !desc ||
-            !Number.isFinite(amount) ||
-            amount <= 0
-        ) {
-            toast(
-                "Informe descrição e valor."
-            );
 
-            return;
-        }
+    $("profileViewEmail").textContent =
+        email;
 
-        const button =
-            event.submitter;
 
-        if (button) {
-            button.disabled = true;
-        }
+    $("profileAvatar").textContent =
+        avatar;
 
-        try {
-            await addExpense({
-                desc,
-                amount:
-                    Math.round(amount * 100) /
-                    100,
-                category,
-                date:
-                    new Date().toISOString(),
-                icon:
-                    selectedIcon === "📦"
-                        ? autoIcon(desc)
-                        : selectedIcon
-            });
 
-            $("expenseForm").reset();
+    $("profileCreatedAt").textContent =
+        user.created_at
+            ? formatDate(
+                user.created_at
+            )
+            : "—";
 
-            selectedIcon = "📦";
 
-            renderIcons();
-            update();
+    $("profileNameInput").value =
+        name;
 
-            toast(
-                "Compra adicionada."
-            );
 
-        } catch (error) {
-            console.error(error);
+    selectedAvatar =
+        avatar;
 
-            toast(
-                "Não foi possível salvar o gasto."
-            );
 
-        } finally {
-            if (button) {
-                button.disabled = false;
+    updateAvatarPicker();
+
+
+    updateAllAvatars();
+}
+
+
+/* ---------------------------------------------------------
+   AVATARES
+   --------------------------------------------------------- */
+
+function updateAllAvatars() {
+
+    const avatar =
+        userAvatar();
+
+
+    $("sidebarAvatar").textContent =
+        avatar;
+
+
+    $("topAvatar").textContent =
+        avatar;
+}
+
+
+function updateAvatarPicker() {
+
+    document
+        .querySelectorAll(".avatar-option")
+        .forEach(
+            button => {
+
+                button.classList.toggle(
+                    "active",
+                    button.dataset.avatar ===
+                        selectedAvatar
+                );
             }
-        }
-    };
+        );
+}
+
+
+/* ---------------------------------------------------------
+   PROFILE EDIT MODE
+   --------------------------------------------------------- */
+
+function openProfileEdit() {
+
+    renderProfile();
+
+
+    $("profileView")
+        ?.classList.add("hidden");
+
+
+    $("profileEditForm")
+        ?.classList.remove("hidden");
+}
+
+
+function closeProfileEdit() {
+
+    $("profileEditForm")
+        ?.classList.add("hidden");
+
+
+    $("profileView")
+        ?.classList.remove("hidden");
+
+
+    renderProfile();
+}
 
 
 /* =========================================================
-   CONFIGURAÇÕES
+   SETTINGS
    ========================================================= */
 
-function syncSettings() {
-    const {
-        startDay,
-        budgets
-    } = state.settings;
-
-    $("pageStartDay").value =
-        startDay;
-
-    $("pageBudgetMistura").value =
-        budgets.mistura;
-
-    $("pageBudgetGeral").value =
-        budgets.geral;
-}
-
-function readSettings(
-    prefix = "page"
-) {
-    return {
-        day: Number(
-            $(`${prefix}StartDay`).value
-        ),
-
-        mistura: Number(
-            $(`${prefix}BudgetMistura`).value
-        ),
-
-        geral: Number(
-            $(`${prefix}BudgetGeral`).value
-        )
-    };
-}
-
-function validateSettings(settings) {
-    return (
-        settings.day >= 1 &&
-        settings.day <= 28 &&
-        settings.mistura > 0 &&
-        settings.geral > 0
-    );
-}
-
-async function saveSettings() {
-    const settings =
-        readSettings();
-
-    if (!validateSettings(settings)) {
-        toast(
-            "Informe valores válidos."
-        );
-
-        return false;
-    }
-
-    state.settings = {
-        startDay: settings.day,
-
-        budgets: {
-            mistura: settings.mistura,
-            geral: settings.geral
-        }
-    };
-
-    selectedCycle = null;
-
-    try {
-        await saveCloudSettings();
-
-        update();
-
-        toast(
-            "Configurações salvas."
-        );
-
-        return true;
-
-    } catch (error) {
-        console.error(error);
-
-        toast(
-            "Não foi possível salvar as configurações."
-        );
-
-        return false;
-    }
-}
-
-$("savePageSettings").onclick =
-    saveSettings;
-
-
-/* =========================================================
-   MODAL DE CICLO
-   ========================================================= */
-
-function openModal() {
-    const {
-        startDay,
-        budgets
-    } = state.settings;
+function renderSettings() {
 
     $("startDay").value =
-        startDay;
+        String(
+            state.settings.start_day
+        );
+
 
     $("budgetMistura").value =
-        budgets.mistura;
+        Number(
+            state.settings.budget_mistura
+        );
+
 
     $("budgetGeral").value =
-        budgets.geral;
+        Number(
+            state.settings.budget_geral
+        );
 
-    $("modalBackdrop")
-        .classList.remove("hidden");
+
+    $("settingsAccountEmail").textContent =
+        currentUser()?.email || "—";
 }
-
-function closeModal() {
-    $("modalBackdrop")
-        .classList.add("hidden");
-}
-
-$("cycleBtn").onclick =
-    openModal;
-
-$("cancelModal").onclick =
-    closeModal;
-
-$("saveSettings").onclick =
-    async () => {
-
-        $("pageStartDay").value =
-            $("startDay").value;
-
-        $("pageBudgetMistura").value =
-            $("budgetMistura").value;
-
-        $("pageBudgetGeral").value =
-            $("budgetGeral").value;
-
-        if (await saveSettings()) {
-            closeModal();
-        }
-    };
-
-$("modalBackdrop").onclick =
-    event => {
-        if (
-            event.target ===
-            $("modalBackdrop")
-        ) {
-            closeModal();
-        }
-    };
 
 
 /* =========================================================
-   PESQUISA / FILTRO
+   HISTORY
    ========================================================= */
 
-$("search").oninput =
-    renderHistory;
+function filteredHistoryExpenses() {
 
-$("filter").onchange =
-    renderHistory;
+    let expenses =
+        [...state.expenses];
 
 
-/* =========================================================
-   LIMPAR HISTÓRICO
-   ========================================================= */
+    if (
+        historyCycle === "current"
+    ) {
 
-$("clearBtn").onclick =
-    async () => {
-
-        if (!state.expenses.length) {
-            toast(
-                "Histórico já está vazio."
+        expenses =
+            expenses.filter(
+                expense =>
+                    isInCurrentCycle(
+                        expense.date
+                    )
             );
+    }
 
-            return;
+
+    const search =
+        $("historySearch")
+            ?.value
+            ?.trim()
+            ?.toLowerCase() || "";
+
+
+    const category =
+        $("historyCategory")
+            ?.value || "all";
+
+
+    if (search) {
+
+        expenses =
+            expenses.filter(
+                expense =>
+                    expense.description
+                        .toLowerCase()
+                        .includes(search)
+            );
+    }
+
+
+    if (category !== "all") {
+
+        expenses =
+            expenses.filter(
+                expense =>
+                    expense.category ===
+                        category
+            );
+    }
+
+
+    return expenses;
+}
+
+
+/* ---------------------------------------------------------
+   RENDER HISTORY
+   --------------------------------------------------------- */
+
+function renderHistory() {
+
+    const list =
+        $("historyList");
+
+
+    const empty =
+        $("historyEmpty");
+
+
+    if (!list || !empty) {
+        return;
+    }
+
+
+    const expenses =
+        filteredHistoryExpenses();
+
+
+    list.innerHTML = "";
+
+
+    if (expenses.length === 0) {
+
+        empty.classList.remove(
+            "hidden"
+        );
+
+        return;
+    }
+
+
+    empty.classList.add(
+        "hidden"
+    );
+
+
+    expenses.forEach(
+        expense => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "history-item";
+
+
+            const categoryName =
+                expense.category ===
+                    "mistura"
+                    ? "Mistura"
+                    : "Geral";
+
+
+            item.innerHTML = `
+
+                <div class="history-icon">
+                    ${escapeHTML(expense.icon)}
+                </div>
+
+                <div class="history-main">
+
+                    <div class="history-title">
+                        ${escapeHTML(
+                            expense.description
+                        )}
+                    </div>
+
+                    <div class="history-meta">
+
+                        <span>
+                            ${formatDate(
+                                expense.date
+                            )}
+                        </span>
+
+                        <span
+                            class="history-category ${expense.category}">
+                            ${categoryName}
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <strong class="history-value">
+                    ${money(expense.amount)}
+                </strong>
+
+                <button
+                    class="history-delete"
+                    type="button"
+                    data-delete-id="${escapeHTML(
+                        expense.id
+                    )}"
+                    title="Excluir gasto">
+                    🗑️
+                </button>
+            `;
+
+
+            list.appendChild(
+                item
+            );
         }
+    );
+}
 
-        if (
-            !confirm(
-                "Apagar todos os gastos deste usuário? " +
-                "Esta ação não pode ser desfeita."
-            )
-        ) {
-            return;
+
+/* =========================================================
+   AUTH UI
+   ========================================================= */
+
+function showAuthModal() {
+
+    $("app")
+        ?.classList.add("hidden");
+
+
+    $("authModal")
+        ?.classList.remove("hidden");
+
+
+    $("passwordResetModal")
+        ?.classList.add("hidden");
+
+
+    document.body.style.overflow =
+        "hidden";
+}
+
+
+function hideAuthModal() {
+
+    $("authModal")
+        ?.classList.add("hidden");
+
+
+    document.body.style.overflow =
+        "";
+}
+
+
+function showApp() {
+
+    $("authModal")
+        ?.classList.add("hidden");
+
+
+    $("passwordResetModal")
+        ?.classList.add("hidden");
+
+
+    $("app")
+        ?.classList.remove("hidden");
+
+
+    document.body.style.overflow =
+        "";
+
+
+    updateAllAvatars();
+
+    navigate(
+        currentPage
+    );
+}
+
+
+/* =========================================================
+   CONFIRM MODAL
+   ========================================================= */
+
+function showConfirm(
+    title,
+    message,
+    callback
+) {
+
+    confirmCallback =
+        callback;
+
+
+    $("confirmTitle").textContent =
+        title;
+
+
+    $("confirmMessage").textContent =
+        message;
+
+
+    $("confirmModal")
+        ?.classList.remove("hidden");
+}
+
+
+function closeConfirm() {
+
+    $("confirmModal")
+        ?.classList.add("hidden");
+
+
+    confirmCallback =
+        null;
+}
+
+
+/* =========================================================
+   EVENTOS — NAVEGAÇÃO
+   ========================================================= */
+
+document
+    .querySelectorAll(".nav-item")
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    navigate(
+                        button.dataset.page
+                    );
+                }
+            );
         }
+    );
 
-        try {
-            if (!(await ensureSession())) {
+
+$("sidebarProfile")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            navigate(
+                "profile"
+            );
+        }
+    );
+
+
+$("topProfileButton")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            navigate(
+                "profile"
+            );
+        }
+    );
+
+
+$("openSidebarBtn")
+    ?.addEventListener(
+        "click",
+        openMobileSidebar
+    );
+
+
+$("closeSidebarBtn")
+    ?.addEventListener(
+        "click",
+        closeMobileSidebar
+    );
+
+
+$("sidebarOverlay")
+    ?.addEventListener(
+        "click",
+        closeMobileSidebar
+    );
+
+
+/* =========================================================
+   EVENTOS — CICLO
+   ========================================================= */
+
+$("cycleButton")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            $("cycleModalText").textContent =
+                `Seu ciclo atual vai de ${getCycleLabel()}.`;
+
+            $("cycleModal")
+                ?.classList.remove(
+                    "hidden"
+                );
+        }
+    );
+
+
+$("closeCycleModalBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            $("cycleModal")
+                ?.classList.add(
+                    "hidden"
+                );
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — ADD EXPENSE
+   ========================================================= */
+
+document
+    .querySelectorAll(".expense-icon")
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    selectedExpenseIcon =
+                        button.dataset.icon;
+
+
+                    document
+                        .querySelectorAll(
+                            ".expense-icon"
+                        )
+                        .forEach(
+                            item => {
+
+                                item.classList.toggle(
+                                    "active",
+                                    item ===
+                                        button
+                                );
+                            }
+                        );
+                }
+            );
+        }
+    );
+
+
+$("expenseForm")
+    ?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const description =
+                $("expenseDescription")
+                    .value
+                    .trim();
+
+
+            const amount =
+                Number(
+                    $("expenseAmount").value
+                );
+
+
+            const category =
+                document
+                    .querySelector(
+                        'input[name="expenseCategory"]:checked'
+                    )
+                    ?.value ||
+                "mistura";
+
+
+            if (!description) {
+
+                toast(
+                    "Informe a descrição do gasto.",
+                    "error"
+                );
+
                 return;
             }
 
-            await supabaseRequest(
-                `/rest/v1/expenses?user_id=eq.${encodeURIComponent(
-                    session.user.id
-                )}`,
-                {
-                    method: "DELETE"
+
+            if (
+                !Number.isFinite(amount) ||
+                amount <= 0
+            ) {
+
+                toast(
+                    "Informe um valor válido.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const submitButton =
+                event.submitter;
+
+
+            if (submitButton) {
+
+                submitButton.disabled =
+                    true;
+
+                submitButton.dataset.originalText =
+                    submitButton.textContent;
+
+                submitButton.textContent =
+                    "Salvando...";
+            }
+
+
+            try {
+
+                await addExpense(
+                    description,
+                    amount,
+                    category,
+                    selectedExpenseIcon
+                );
+
+
+                $("expenseForm").reset();
+
+
+                document
+                    .querySelector(
+                        'input[name="expenseCategory"][value="mistura"]'
+                    )
+                    ?.click();
+
+
+                selectedExpenseIcon =
+                    "🛒";
+
+
+                document
+                    .querySelectorAll(
+                        ".expense-icon"
+                    )
+                    .forEach(
+                        button => {
+
+                            button.classList.toggle(
+                                "active",
+                                button.dataset.icon ===
+                                    "🛒"
+                            );
+                        }
+                    );
+
+
+                toast(
+                    "Gasto adicionado com sucesso."
+                );
+
+
+                navigate(
+                    "history"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível salvar o gasto.",
+                    "error"
+                );
+
+            } finally {
+
+                if (submitButton) {
+
+                    submitButton.disabled =
+                        false;
+
+                    submitButton.textContent =
+                        submitButton.dataset.originalText ||
+                        "Adicionar gasto";
                 }
-            );
+            }
+        }
+    );
 
-            state.expenses = [];
-            selectedCycle = null;
 
-            update();
+$("cancelExpenseBtn")
+    ?.addEventListener(
+        "click",
+        () => {
 
-            toast(
-                "Histórico apagado."
-            );
+            $("expenseForm")
+                ?.reset();
 
-        } catch (error) {
-            console.error(error);
-
-            toast(
-                "Não foi possível apagar o histórico."
+            navigate(
+                "dashboard"
             );
         }
-    };
+    );
 
 
 /* =========================================================
-   AUTENTICAÇÃO — INTERFACE
+   EVENTOS — HISTORY
    ========================================================= */
 
-function showAuth() {
-    $("authModal")
-        .classList.remove("hidden");
-}
+$("historySearch")
+    ?.addEventListener(
+        "input",
+        renderHistory
+    );
 
-function hideAuth() {
-    $("authModal")
-        .classList.add("hidden");
-}
 
-$("authForm").onsubmit =
-    async event => {
+$("historyCategory")
+    ?.addEventListener(
+        "change",
+        renderHistory
+    );
 
-        event.preventDefault();
 
-        const email =
-            $("authEmail").value.trim();
+document
+    .querySelectorAll(".cycle-tab")
+    .forEach(
+        button => {
 
-        const password =
-            $("authPassword").value;
+            button.addEventListener(
+                "click",
+                () => {
 
-        if (!email || !password) {
-            toast(
-                "Informe e-mail e senha."
+                    historyCycle =
+                        button.dataset.cycle;
+
+
+                    document
+                        .querySelectorAll(
+                            ".cycle-tab"
+                        )
+                        .forEach(
+                            tab => {
+
+                                tab.classList.toggle(
+                                    "active",
+                                    tab ===
+                                        button
+                                );
+                            }
+                        );
+
+
+                    renderHistory();
+                }
             );
-
-            return;
         }
+    );
 
-        const button =
-            event.submitter;
 
-        if (button) {
-            button.disabled = true;
+$("historyList")
+    ?.addEventListener(
+        "click",
+        event => {
+
+            const button =
+                event.target.closest(
+                    "[data-delete-id]"
+                );
+
+
+            if (!button) {
+                return;
+            }
+
+
+            const id =
+                button.dataset.deleteId;
+
+
+            const expense =
+                state.expenses.find(
+                    item =>
+                        item.id === id
+                );
+
+
+            if (!expense) {
+                return;
+            }
+
+
+            showConfirm(
+                "Excluir gasto?",
+                `Deseja excluir "${expense.description}"?`,
+                async () => {
+
+                    try {
+
+                        await deleteExpense(
+                            id
+                        );
+
+
+                        toast(
+                            "Gasto excluído."
+                        );
+
+
+                        renderHistory();
+                        renderDashboard();
+
+                    } catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+
+                        toast(
+                            error.message ||
+                                "Não foi possível excluir o gasto.",
+                            "error"
+                        );
+                    }
+                }
+            );
         }
+    );
 
-        try {
 
-            if (authMode === "register") {
-                await register(
-                    email,
+$("clearHistoryBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            if (
+                state.expenses.length === 0
+            ) {
+
+                toast(
+                    "Não existem gastos para apagar.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            showConfirm(
+                "Limpar histórico?",
+                "Todos os gastos da sua conta serão excluídos permanentemente.",
+                async () => {
+
+                    try {
+
+                        await deleteAllExpenses();
+
+
+                        toast(
+                            "Histórico apagado."
+                        );
+
+
+                        renderHistory();
+                        renderDashboard();
+
+                    } catch (error) {
+
+                        console.error(
+                            error
+                        );
+
+
+                        toast(
+                            error.message ||
+                                "Não foi possível limpar o histórico.",
+                            "error"
+                        );
+                    }
+                }
+            );
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — PERFIL
+   ========================================================= */
+
+$("editProfileBtn")
+    ?.addEventListener(
+        "click",
+        openProfileEdit
+    );
+
+
+$("editProfileTopBtn")
+    ?.addEventListener(
+        "click",
+        openProfileEdit
+    );
+
+
+$("cancelProfileEditBtn")
+    ?.addEventListener(
+        "click",
+        closeProfileEdit
+    );
+
+
+document
+    .querySelectorAll(".avatar-option")
+    .forEach(
+        button => {
+
+            button.addEventListener(
+                "click",
+                () => {
+
+                    selectedAvatar =
+                        button.dataset.avatar;
+
+
+                    updateAvatarPicker();
+                }
+            );
+        }
+    );
+
+
+$("profileEditForm")
+    ?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const name =
+                $("profileNameInput")
+                    .value
+                    .trim();
+
+
+            if (!name) {
+
+                toast(
+                    "Digite seu nome.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (name.length > 60) {
+
+                toast(
+                    "O nome pode ter no máximo 60 caracteres.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const submitButton =
+                event.submitter;
+
+
+            if (submitButton) {
+
+                submitButton.disabled =
+                    true;
+
+                submitButton.textContent =
+                    "Salvando...";
+            }
+
+
+            try {
+
+                await updateProfile(
+                    name,
+                    selectedAvatar
+                );
+
+
+                toast(
+                    "Perfil atualizado."
+                );
+
+
+                renderProfile();
+
+
+                closeProfileEdit();
+
+
+                updateAllAvatars();
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível atualizar o perfil.",
+                    "error"
+                );
+
+            } finally {
+
+                if (submitButton) {
+
+                    submitButton.disabled =
+                        false;
+
+                    submitButton.textContent =
+                        "Salvar alterações";
+                }
+            }
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — ALTERAÇÃO DE SENHA
+   ========================================================= */
+
+$("passwordChangeForm")
+    ?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const password =
+                $("newPassword").value;
+
+
+            const confirm =
+                $("confirmPassword").value;
+
+
+            if (password.length < 6) {
+
+                toast(
+                    "A senha precisa ter pelo menos 6 caracteres.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (password !== confirm) {
+
+                toast(
+                    "As senhas não são iguais.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                event.submitter;
+
+
+            if (button) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "Alterando...";
+            }
+
+
+            try {
+
+                await updatePassword(
                     password
                 );
-            } else {
+
+
+                $("passwordChangeForm")
+                    .reset();
+
+
+                toast(
+                    "Senha alterada com sucesso."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível alterar a senha.",
+                    "error"
+                );
+
+            } finally {
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Alterar senha";
+                }
+            }
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — PASSWORD RESET
+   ========================================================= */
+
+$("passwordResetForm")
+    ?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const password =
+                $("resetNewPassword")
+                    .value;
+
+
+            const confirm =
+                $("resetConfirmPassword")
+                    .value;
+
+
+            if (password.length < 6) {
+
+                toast(
+                    "A senha precisa ter pelo menos 6 caracteres.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (password !== confirm) {
+
+                toast(
+                    "As senhas não são iguais.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                event.submitter;
+
+
+            if (button) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "Salvando...";
+            }
+
+
+            try {
+
+                await updatePassword(
+                    password
+                );
+
+
+                $("passwordResetForm")
+                    .reset();
+
+
+                $("passwordResetModal")
+                    ?.classList.add(
+                        "hidden"
+                    );
+
+
+                toast(
+                    "Senha redefinida com sucesso."
+                );
+
+
+                navigate(
+                    "dashboard"
+                );
+
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível redefinir a senha.",
+                    "error"
+                );
+
+            } finally {
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Definir nova senha";
+                }
+            }
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — SETTINGS
+   ========================================================= */
+
+$("saveSettingsBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const startDay =
+                Number(
+                    $("startDay").value
+                );
+
+
+            const budgetMistura =
+                Number(
+                    $("budgetMistura").value
+                );
+
+
+            const budgetGeral =
+                Number(
+                    $("budgetGeral").value
+                );
+
+
+            if (
+                !Number.isInteger(startDay) ||
+                startDay < 1 ||
+                startDay > 28
+            ) {
+
+                toast(
+                    "Escolha um dia inicial válido.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (
+                !Number.isFinite(budgetMistura) ||
+                budgetMistura <= 0
+            ) {
+
+                toast(
+                    "Informe um orçamento válido para Mistura.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (
+                !Number.isFinite(budgetGeral) ||
+                budgetGeral <= 0
+            ) {
+
+                toast(
+                    "Informe um orçamento válido para Geral.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                $("saveSettingsBtn");
+
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Salvando...";
+
+
+            try {
+
+                await saveCloudSettings({
+
+                    start_day:
+                        startDay,
+
+                    budget_mistura:
+                        budgetMistura,
+
+                    budget_geral:
+                        budgetGeral
+                });
+
+
+                toast(
+                    "Configurações salvas."
+                );
+
+
+                renderDashboard();
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível salvar as configurações.",
+                    "error"
+                );
+
+            } finally {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Salvar configurações";
+            }
+        }
+    );
+
+
+/* =========================================================
+   EVENTOS — AUTH
+   ========================================================= */
+
+$("authForm")
+    ?.addEventListener(
+        "submit",
+        async event => {
+
+            event.preventDefault();
+
+
+            const email =
+                $("authEmail")
+                    .value
+                    .trim();
+
+
+            const password =
+                $("authPassword")
+                    .value;
+
+
+            if (!email) {
+
+                toast(
+                    "Digite seu e-mail.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            if (password.length < 6) {
+
+                toast(
+                    "A senha precisa ter pelo menos 6 caracteres.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                event.submitter;
+
+
+            if (button) {
+
+                button.disabled =
+                    true;
+
+                button.textContent =
+                    "Entrando...";
+            }
+
+
+            try {
+
                 await login(
                     email,
                     password
                 );
+
+
+                $("authForm")
+                    .reset();
+
+
+                await loadCloudData();
+
+
+                showApp();
+
+
+                toast(
+                    "Login realizado com sucesso."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                let message =
+                    error.message ||
+                    "Não foi possível entrar.";
+
+
+                if (
+                    message
+                        .toLowerCase()
+                        .includes("invalid login credentials")
+                ) {
+
+                    message =
+                        "E-mail ou senha incorretos.";
+                }
+
+
+                toast(
+                    message,
+                    "error"
+                );
+
+            } finally {
+
+                if (button) {
+
+                    button.disabled =
+                        false;
+
+                    button.textContent =
+                        "Entrar";
+                }
+            }
+        }
+    );
+
+
+/* ---------------------------------------------------------
+   CADASTRO
+   --------------------------------------------------------- */
+
+$("registerBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const email =
+                $("authEmail")
+                    .value
+                    .trim();
+
+
+            const password =
+                $("authPassword")
+                    .value;
+
+
+            if (!email) {
+
+                toast(
+                    "Digite o e-mail para criar a conta.",
+                    "error"
+                );
+
+                return;
             }
 
-        } catch (error) {
-            console.error(error);
 
-            toast(
-                error.message ||
-                "Não foi possível autenticar."
-            );
+            if (password.length < 6) {
 
-        } finally {
-            if (button) {
-                button.disabled = false;
+                toast(
+                    "A senha precisa ter pelo menos 6 caracteres.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            const button =
+                $("registerBtn");
+
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Criando...";
+
+
+            try {
+
+                const result =
+                    await register(
+                        email,
+                        password
+                    );
+
+
+                if (
+                    result.authenticated
+                ) {
+
+                    $("authForm")
+                        .reset();
+
+
+                    await loadCloudData();
+
+
+                    showApp();
+
+
+                    toast(
+                        "Conta criada com sucesso."
+                    );
+
+                } else {
+
+                    toast(
+                        "Conta criada. Verifique seu e-mail para continuar."
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                let message =
+                    error.message ||
+                    "Não foi possível criar a conta.";
+
+
+                if (
+                    message
+                        .toLowerCase()
+                        .includes("already registered")
+                ) {
+
+                    message =
+                        "Este e-mail já possui uma conta.";
+                }
+
+
+                toast(
+                    message,
+                    "error"
+                );
+
+            } finally {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Criar conta";
             }
         }
-    };
+    );
 
-$("registerBtn").onclick =
-    async () => {
 
-        authMode = "register";
+/* ---------------------------------------------------------
+   ESQUECI SENHA
+   --------------------------------------------------------- */
 
-        const email =
-            $("authEmail").value.trim();
+$("forgotPasswordBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
 
-        const password =
-            $("authPassword").value;
+            const email =
+                $("authEmail")
+                    .value
+                    .trim();
 
-        if (!email || !password) {
-            toast(
-                "Informe e-mail e senha para criar a conta."
-            );
 
-            return;
+            if (!email) {
+
+                toast(
+                    "Digite seu e-mail primeiro.",
+                    "error"
+                );
+
+                $("authEmail").focus();
+
+                return;
+            }
+
+
+            const button =
+                $("forgotPasswordBtn");
+
+
+            button.disabled =
+                true;
+
+            button.textContent =
+                "Enviando...";
+
+
+            try {
+
+                await sendPasswordRecovery(
+                    email
+                );
+
+
+                toast(
+                    "Se o e-mail existir, o link de recuperação foi enviado."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+
+                toast(
+                    error.message ||
+                        "Não foi possível enviar o e-mail.",
+                    "error"
+                );
+
+            } finally {
+
+                button.disabled =
+                    false;
+
+                button.textContent =
+                    "Esqueci minha senha";
+            }
         }
-
-        try {
-            await register(
-                email,
-                password
-            );
-        } catch (error) {
-            console.error(error);
-
-            toast(
-                error.message ||
-                "Não foi possível criar a conta."
-            );
-        }
-    };
-
-$("forgotPasswordBtn").onclick =
-    async () => {
-
-        const email =
-            $("authEmail").value.trim();
-
-        try {
-            await resetPassword(email);
-        } catch (error) {
-            console.error(error);
-
-            toast(
-                error.message ||
-                "Não foi possível enviar a recuperação."
-            );
-        }
-    };
-
-$("logoutBtn").onclick =
-    logout;
+    );
 
 
 /* =========================================================
-   ATUALIZAÇÃO DA INTERFACE
+   LOGOUT
    ========================================================= */
 
-function update() {
-    renderDashboard();
-    renderHistory();
-    syncSettings();
+$("logoutBtn")
+    ?.addEventListener(
+        "click",
+        () => {
+
+            showConfirm(
+                "Sair da conta?",
+                "Você será desconectado deste dispositivo.",
+                async () => {
+
+                    await logout();
+
+                    toast(
+                        "Você saiu da conta."
+                    );
+                }
+            );
+        }
+    );
+
+
+/* =========================================================
+   CONFIRM MODAL
+   ========================================================= */
+
+$("confirmCancelBtn")
+    ?.addEventListener(
+        "click",
+        closeConfirm
+    );
+
+
+$("confirmOkBtn")
+    ?.addEventListener(
+        "click",
+        async () => {
+
+            const callback =
+                confirmCallback;
+
+
+            closeConfirm();
+
+
+            if (
+                typeof callback ===
+                "function"
+            ) {
+
+                await callback();
+            }
+        }
+    );
+
+
+/* =========================================================
+   FECHAR MODAIS CLICANDO FORA
+   ========================================================= */
+
+[
+    "cycleModal",
+    "confirmModal"
+].forEach(
+    id => {
+
+        $(id)?.addEventListener(
+            "click",
+            event => {
+
+                if (
+                    event.target ===
+                    $(id)
+                ) {
+
+                    $(id)
+                        .classList.add(
+                            "hidden"
+                        );
+                }
+            }
+        );
+    }
+);
+
+
+/* =========================================================
+   ATUALIZA DADOS DO SIDEBAR
+   ========================================================= */
+
+function renderUserUI() {
+
+    const user =
+        currentUser();
+
+
+    if (!user) {
+        return;
+    }
+
+
+    const name =
+        userName();
+
+
+    const email =
+        user.email ||
+        "—";
+
+
+    const avatar =
+        userAvatar();
+
+
+    $("sidebarName").textContent =
+        name;
+
+
+    $("sidebarEmail").textContent =
+        email;
+
+
+    $("sidebarAvatar").textContent =
+        avatar;
+
+
+    $("topAvatar").textContent =
+        avatar;
+
+
+    $("settingsAccountEmail").textContent =
+        email;
+}
+
+
+/* =========================================================
+   SESSION / TOKEN
+   ========================================================= */
+
+async function ensureValidSession() {
+
+    if (!session) {
+        return false;
+    }
+
+
+    /*
+     * Se houver token de recuperação,
+     * não tentamos validar como uma sessão comum.
+     */
+
+    if (
+        session.type ===
+        "recovery"
+    ) {
+
+        return true;
+    }
+
+
+    /*
+     * Primeiro tentamos carregar os dados.
+     * Se der 401, renovamos o token.
+     */
+
+    try {
+
+        await supabaseRequest(
+            "/auth/v1/user",
+            {
+                method: "GET"
+            }
+        );
+
+
+        return true;
+
+    } catch (error) {
+
+        if (
+            error.status !== 401
+        ) {
+
+            console.warn(
+                "Erro ao validar sessão:",
+                error
+            );
+
+            return true;
+        }
+
+
+        return await refreshSession();
+    }
 }
 
 
@@ -1555,50 +3625,200 @@ function update() {
    INICIALIZAÇÃO
    ========================================================= */
 
-async function init() {
+async function initializeApp() {
 
-    $("today").textContent =
-        new Date().toLocaleDateString(
-            "pt-BR",
-            {
-                weekday: "long",
-                day: "2-digit",
-                month: "long"
-            }
-        );
+    /*
+     * 1. Primeiro verifica se o site acabou de receber
+     * um link de recuperação de senha.
+     */
 
-    renderIcons();
+    const recovery =
+        await handleRecoveryRedirect();
 
-    if (!(await ensureSession())) {
+
+    if (recovery) {
+
         return;
     }
+
+
+    /*
+     * 2. Carrega sessão salva.
+     */
+
+    session =
+        loadSession();
+
+
+    /*
+     * 3. Não existe sessão.
+     */
+
+    if (!session) {
+
+        showAuthModal();
+
+        return;
+    }
+
+
+    /*
+     * 4. Verifica se ainda é válida.
+     */
+
+    const valid =
+        await ensureValidSession();
+
+
+    if (!valid) {
+
+        clearSession();
+
+        showAuthModal();
+
+        return;
+    }
+
+
+    /*
+     * 5. Carrega dados da conta.
+     */
 
     try {
 
         await loadCloudData();
 
-        hideAuth();
-
-        update();
-
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Erro ao carregar dados:",
+            error
+        );
+
+
+        /*
+         * Se a sessão expirou durante o carregamento,
+         * tentamos renovar uma vez.
+         */
 
         if (
-            error.message
-                ?.toLowerCase()
-                .includes("jwt")
+            error.status === 401
         ) {
-            clearSession();
-            showAuth();
-            return;
-        }
 
-        toast(
-            "Não foi possível carregar seus dados."
-        );
+            const refreshed =
+                await refreshSession();
+
+
+            if (refreshed) {
+
+                try {
+
+                    await loadCloudData();
+
+                } catch (secondError) {
+
+                    console.error(
+                        secondError
+                    );
+
+                    clearSession();
+
+                    showAuthModal();
+
+                    toast(
+                        "Sua sessão expirou. Entre novamente.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+            } else {
+
+                clearSession();
+
+                showAuthModal();
+
+                toast(
+                    "Sua sessão expirou. Entre novamente.",
+                    "error"
+                );
+
+                return;
+            }
+
+        } else {
+
+            toast(
+                "Não foi possível carregar seus dados.",
+                "error"
+            );
+        }
     }
+
+
+    /*
+     * 6. Atualiza interface.
+     */
+
+    renderUserUI();
+
+    renderProfile();
+
+    renderSettings();
+
+    renderDashboard();
+
+    renderHistory();
+
+    showApp();
 }
 
-init();
+
+/* =========================================================
+   TRATAMENTO DE ERRO GLOBAL
+   ========================================================= */
+
+window.addEventListener(
+    "unhandledrejection",
+    event => {
+
+        console.error(
+            "Promise rejeitada:",
+            event.reason
+        );
+    }
+);
+
+
+/* =========================================================
+   INICIAR
+   ========================================================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        initializeApp()
+            .catch(
+                error => {
+
+                    console.error(
+                        "Erro fatal na inicialização:",
+                        error
+                    );
+
+
+                    clearSession();
+
+                    showAuthModal();
+
+
+                    toast(
+                        "Não foi possível iniciar o aplicativo.",
+                        "error"
+                    );
+                }
+            );
+    }
+);
