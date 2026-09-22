@@ -10,6 +10,11 @@
     <title>Despesas da Casa</title>
 
     <link rel="stylesheet" href="style.css">
+
+    <!-- Tabler Icons via Iconify -->
+    <script
+        src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js">
+    </script>
 </head>
 
 <body>
@@ -32,12 +37,16 @@
             <div class="sidebar-header">
 
                 <div class="brand">
-                    <div class="brand-icon">💰</div>
+
+                    <div class="brand-icon">
+                        <iconify-icon icon="tabler:home-dollar"></iconify-icon>
+                    </div>
 
                     <div class="brand-text">
                         <strong>Despesas</strong>
                         <span>da Casa</span>
                     </div>
+
                 </div>
 
                 <button
@@ -45,7 +54,9 @@
                     class="icon-button mobile-only"
                     type="button"
                     aria-label="Fechar menu">
-                    ✕
+
+                    <iconify-icon icon="tabler:x"></iconify-icon>
+
                 </button>
 
             </div>
@@ -67,7 +78,9 @@
                     <span id="sidebarEmail">—</span>
                 </div>
 
-                <span class="sidebar-profile-arrow">›</span>
+                <span class="sidebar-profile-arrow">
+                    <iconify-icon icon="tabler:chevron-right"></iconify-icon>
+                </span>
 
             </button>
 
@@ -81,7 +94,10 @@
                     data-page="dashboard"
                     type="button">
 
-                    <span class="nav-icon">📊</span>
+                    <span class="nav-icon">
+                        <iconify-icon icon="tabler:layout-dashboard"></iconify-icon>
+                    </span>
+
                     <span>Resumo</span>
 
                 </button>
@@ -92,7 +108,10 @@
                     data-page="add"
                     type="button">
 
-                    <span class="nav-icon">➕</span>
+                    <span class="nav-icon">
+                        <iconify-icon icon="tabler:plus"></iconify-icon>
+                    </span>
+
                     <span>Adicionar gasto</span>
 
                 </button>
@@ -103,7 +122,10 @@
                     data-page="history"
                     type="button">
 
-                    <span class="nav-icon">📋</span>
+                    <span class="nav-icon">
+                        <iconify-icon icon="tabler:history"></iconify-icon>
+                    </span>
+
                     <span>Histórico</span>
 
                 </button>
@@ -114,7 +136,10 @@
                     data-page="profile"
                     type="button">
 
-                    <span class="nav-icon">👤</span>
+                    <span class="nav-icon">
+                        <iconify-icon icon="tabler:user"></iconify-icon>
+                    </span>
+
                     <span>Perfil</span>
 
                 </button>
@@ -125,7 +150,10 @@
                     data-page="settings"
                     type="button">
 
-                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-icon">
+                        <iconify-icon icon="tabler:settings"></iconify-icon>
+                    </span>
+
                     <span>Configurações</span>
 
                 </button>
@@ -160,14 +188,19 @@
                     class="icon-button mobile-only"
                     type="button"
                     aria-label="Abrir menu">
-                    ☰
+
+                    <iconify-icon icon="tabler:menu-2"></iconify-icon>
+
                 </button>
 
 
                 <div class="topbar-title">
 
                     <h1 id="pageTitle">Resumo</h1>
-                    <span id="pageSubtitle">Visão geral das suas despesas</span>
+
+                    <span id="pageSubtitle">
+                        Visão geral das suas despesas
+                    </span>
 
                 </div>
 
@@ -180,8 +213,11 @@
                         type="button"
                         title="Alterar ciclo">
 
-                        <span>📅</span>
-                        <span id="cycleLabel">Ciclo atual</span>
+                        <iconify-icon icon="tabler:calendar"></iconify-icon>
+
+                        <span id="cycleLabel">
+                            Ciclo atual
+                        </span>
 
                     </button>
 
@@ -220,8 +256,15 @@
                         <article class="stat-card">
 
                             <div class="stat-card-top">
-                                <span class="stat-label">Orçamento</span>
-                                <span class="stat-icon">🎯</span>
+
+                                <span class="stat-label">
+                                    Orçamento
+                                </span>
+
+                                <span class="stat-icon">
+                                    <iconify-icon icon="tabler:target"></iconify-icon>
+                                </span>
+
                             </div>
 
                             <strong
@@ -240,8 +283,15 @@
                         <article class="stat-card">
 
                             <div class="stat-card-top">
-                                <span class="stat-label">Gastos</span>
-                                <span class="stat-icon">💸</span>
+
+                                <span class="stat-label">
+                                    Gastos
+                                </span>
+
+                                <span class="stat-icon">
+                                    <iconify-icon icon="tabler:cash"></iconify-icon>
+                                </span>
+
                             </div>
 
                             <strong
@@ -262,8 +312,15 @@
                         <article class="stat-card">
 
                             <div class="stat-card-top">
-                                <span class="stat-label">Saldo</span>
-                                <span class="stat-icon">💰</span>
+
+                                <span class="stat-label">
+                                    Saldo
+                                </span>
+
+                                <span class="stat-icon">
+                                    <iconify-icon icon="tabler:wallet"></iconify-icon>
+                                </span>
+
                             </div>
 
                             <strong
@@ -284,8 +341,15 @@
                         <article class="stat-card">
 
                             <div class="stat-card-top">
-                                <span class="stat-label">Dias restantes</span>
-                                <span class="stat-icon">⏳</span>
+
+                                <span class="stat-label">
+                                    Dias restantes
+                                </span>
+
+                                <span class="stat-icon">
+                                    <iconify-icon icon="tabler:hourglass"></iconify-icon>
+                                </span>
+
                             </div>
 
                             <strong
@@ -312,10 +376,15 @@
                             <div class="card-header">
 
                                 <div>
-                                    <h2>Progresso do orçamento</h2>
+
+                                    <h2>
+                                        Progresso do orçamento
+                                    </h2>
+
                                     <span id="progressText">
                                         0% utilizado
                                     </span>
+
                                 </div>
 
                                 <strong id="progressPercent">
@@ -362,10 +431,19 @@
                         <article class="card donut-card">
 
                             <div class="card-header">
+
                                 <div>
-                                    <h2>Distribuição</h2>
-                                    <span>Gastos por categoria</span>
+
+                                    <h2>
+                                        Distribuição
+                                    </h2>
+
+                                    <span>
+                                        Gastos por categoria
+                                    </span>
+
                                 </div>
+
                             </div>
 
 
@@ -397,10 +475,15 @@
                                         <span class="legend-dot mistura"></span>
 
                                         <div>
-                                            <strong>Mistura</strong>
+
+                                            <strong>
+                                                Mistura
+                                            </strong>
+
                                             <span id="legendMistura">
                                                 R$ 0,00
                                             </span>
+
                                         </div>
 
                                     </div>
@@ -411,10 +494,15 @@
                                         <span class="legend-dot geral"></span>
 
                                         <div>
-                                            <strong>Geral</strong>
+
+                                            <strong>
+                                                Geral
+                                            </strong>
+
                                             <span id="legendGeral">
                                                 R$ 0,00
                                             </span>
+
                                         </div>
 
                                     </div>
@@ -435,10 +523,15 @@
                         <div class="card-header">
 
                             <div>
-                                <h2>Orçamento por categoria</h2>
+
+                                <h2>
+                                    Orçamento por categoria
+                                </h2>
+
                                 <span>
                                     Acompanhe cada categoria
                                 </span>
+
                             </div>
 
                         </div>
@@ -449,14 +542,18 @@
                             <div class="category-row">
 
                                 <div class="category-row-icon mistura">
-                                    🛒
+
+                                    <iconify-icon icon="tabler:shopping-cart"></iconify-icon>
+
                                 </div>
 
                                 <div class="category-row-main">
 
                                     <div class="category-row-title">
 
-                                        <strong>Mistura</strong>
+                                        <strong>
+                                            Mistura
+                                        </strong>
 
                                         <span id="categoryMisturaText">
                                             R$ 0,00 / R$ 0,00
@@ -481,14 +578,18 @@
                             <div class="category-row">
 
                                 <div class="category-row-icon geral">
-                                    🏠
+
+                                    <iconify-icon icon="tabler:home"></iconify-icon>
+
                                 </div>
 
                                 <div class="category-row-main">
 
                                     <div class="category-row-title">
 
-                                        <strong>Geral</strong>
+                                        <strong>
+                                            Geral
+                                        </strong>
 
                                         <span id="categoryGeralText">
                                             R$ 0,00 / R$ 0,00
@@ -531,10 +632,15 @@
                     <div class="section-heading">
 
                         <div>
-                            <h2>Adicionar gasto</h2>
+
+                            <h2>
+                                Adicionar gasto
+                            </h2>
+
                             <p>
                                 Registre uma nova despesa.
                             </p>
+
                         </div>
 
                     </div>
@@ -602,14 +708,21 @@
                                     <span class="category-option-content">
 
                                         <span class="category-option-icon">
-                                            🛒
+
+                                            <iconify-icon icon="tabler:shopping-cart"></iconify-icon>
+
                                         </span>
 
                                         <span>
-                                            <strong>Mistura</strong>
+
+                                            <strong>
+                                                Mistura
+                                            </strong>
+
                                             <small>
                                                 Alimentação e compras
                                             </small>
+
                                         </span>
 
                                     </span>
@@ -627,14 +740,21 @@
                                     <span class="category-option-content">
 
                                         <span class="category-option-icon">
-                                            🏠
+
+                                            <iconify-icon icon="tabler:home"></iconify-icon>
+
                                         </span>
 
                                         <span>
-                                            <strong>Geral</strong>
+
+                                            <strong>
+                                                Geral
+                                            </strong>
+
                                             <small>
                                                 Outras despesas
                                             </small>
+
                                         </span>
 
                                     </span>
@@ -656,74 +776,109 @@
                                 id="expenseIconPicker"
                                 class="icon-picker">
 
+                                <!--
+                                    Os data-icon continuam usando emoji
+                                    porque o app.js atual salva esse valor
+                                    junto com o gasto.
+                                -->
+
                                 <button
                                     type="button"
                                     class="expense-icon active"
                                     data-icon="🛒">
-                                    🛒
+
+                                    <iconify-icon icon="tabler:shopping-cart"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="🍔">
-                                    🍔
+
+                                    <iconify-icon icon="tabler:tools-kitchen-2"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="🏠">
-                                    🏠
+
+                                    <iconify-icon icon="tabler:home"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="💡">
-                                    💡
+
+                                    <iconify-icon icon="tabler:bulb"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="💧">
-                                    💧
+
+                                    <iconify-icon icon="tabler:droplet"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="📱">
-                                    📱
+
+                                    <iconify-icon icon="tabler:device-mobile"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="🚗">
-                                    🚗
+
+                                    <iconify-icon icon="tabler:car"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="🛍️">
-                                    🛍️
+
+                                    <iconify-icon icon="tabler:shopping-bag"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="💊">
-                                    💊
+
+                                    <iconify-icon icon="tabler:pill"></iconify-icon>
+
                                 </button>
+
 
                                 <button
                                     type="button"
                                     class="expense-icon"
                                     data-icon="🎮">
-                                    🎮
+
+                                    <iconify-icon icon="tabler:device-gamepad-2"></iconify-icon>
+
                                 </button>
 
                             </div>
@@ -737,13 +892,19 @@
                                 type="button"
                                 id="cancelExpenseBtn"
                                 class="secondary">
+
                                 Cancelar
+
                             </button>
 
                             <button
                                 type="submit"
                                 class="primary">
+
+                                <iconify-icon icon="tabler:plus"></iconify-icon>
+
                                 Adicionar gasto
+
                             </button>
 
                         </div>
@@ -768,17 +929,26 @@
                     <div class="section-heading">
 
                         <div>
-                            <h2>Histórico</h2>
+
+                            <h2>
+                                Histórico
+                            </h2>
+
                             <p>
                                 Todos os seus gastos registrados.
                             </p>
+
                         </div>
 
                         <button
                             id="clearHistoryBtn"
                             class="danger-outline"
                             type="button">
+
+                            <iconify-icon icon="tabler:trash"></iconify-icon>
+
                             Limpar histórico
+
                         </button>
 
                     </div>
@@ -790,7 +960,9 @@
 
                             <div class="search-box">
 
-                                <span>🔎</span>
+                                <span>
+                                    <iconify-icon icon="tabler:search"></iconify-icon>
+                                </span>
 
                                 <input
                                     id="historySearch"
@@ -827,14 +999,23 @@
                                 type="button"
                                 class="cycle-tab active"
                                 data-cycle="current">
+
+                                <iconify-icon icon="tabler:calendar"></iconify-icon>
+
                                 Ciclo atual
+
                             </button>
+
 
                             <button
                                 type="button"
                                 class="cycle-tab"
                                 data-cycle="all">
+
+                                <iconify-icon icon="tabler:list"></iconify-icon>
+
                                 Todos
+
                             </button>
 
                         </div>
@@ -851,10 +1032,14 @@
                             class="empty-state hidden">
 
                             <div class="empty-icon">
-                                🧾
+
+                                <iconify-icon icon="tabler:receipt-off"></iconify-icon>
+
                             </div>
 
-                            <h3>Nenhum gasto encontrado</h3>
+                            <h3>
+                                Nenhum gasto encontrado
+                            </h3>
 
                             <p>
                                 Os gastos adicionados aparecerão aqui.
@@ -882,17 +1067,26 @@
                     <div class="section-heading">
 
                         <div>
-                            <h2>Meu perfil</h2>
+
+                            <h2>
+                                Meu perfil
+                            </h2>
+
                             <p>
                                 Gerencie seus dados pessoais.
                             </p>
+
                         </div>
 
                         <button
                             id="editProfileTopBtn"
                             class="secondary"
                             type="button">
-                            ✏️ Editar
+
+                            <iconify-icon icon="tabler:edit"></iconify-icon>
+
+                            Editar
+
                         </button>
 
                     </div>
@@ -956,8 +1150,7 @@
                                         E-mail
                                     </span>
 
-                                    <strong
-                                        id="profileViewEmail">
+                                    <strong id="profileViewEmail">
                                         —
                                     </strong>
 
@@ -970,8 +1163,7 @@
                                         Conta criada
                                     </span>
 
-                                    <strong
-                                        id="profileCreatedAt">
+                                    <strong id="profileCreatedAt">
                                         —
                                     </strong>
 
@@ -984,7 +1176,11 @@
                                 id="editProfileBtn"
                                 class="primary full-width"
                                 type="button">
-                                ✏️ Editar perfil
+
+                                <iconify-icon icon="tabler:edit"></iconify-icon>
+
+                                Editar perfil
+
                             </button>
 
                         </div>
@@ -1144,13 +1340,19 @@
                                     type="button"
                                     id="cancelProfileEditBtn"
                                     class="secondary">
+
                                     Cancelar
+
                                 </button>
 
                                 <button
                                     type="submit"
                                     class="primary">
+
+                                    <iconify-icon icon="tabler:device-floppy"></iconify-icon>
+
                                     Salvar alterações
+
                                 </button>
 
                             </div>
@@ -1167,14 +1369,21 @@
                         <div class="card-header">
 
                             <div>
-                                <h2>Segurança</h2>
+
+                                <h2>
+                                    Segurança
+                                </h2>
+
                                 <span>
                                     Altere sua senha de acesso.
                                 </span>
+
                             </div>
 
                             <span class="security-icon">
-                                🔐
+
+                                <iconify-icon icon="tabler:shield-lock"></iconify-icon>
+
                             </span>
 
                         </div>
@@ -1217,7 +1426,11 @@
                             <button
                                 type="submit"
                                 class="primary">
+
+                                <iconify-icon icon="tabler:key"></iconify-icon>
+
                                 Alterar senha
+
                             </button>
 
                         </form>
@@ -1242,10 +1455,15 @@
                     <div class="section-heading">
 
                         <div>
-                            <h2>Configurações</h2>
+
+                            <h2>
+                                Configurações
+                            </h2>
+
                             <p>
                                 Personalize seu controle financeiro.
                             </p>
+
                         </div>
 
                     </div>
@@ -1258,15 +1476,21 @@
                         <div class="card-header">
 
                             <div>
-                                <h2>Ciclo mensal</h2>
+
+                                <h2>
+                                    Ciclo mensal
+                                </h2>
 
                                 <span>
                                     Defina o dia em que seu ciclo começa.
                                 </span>
+
                             </div>
 
                             <span class="settings-icon">
-                                📅
+
+                                <iconify-icon icon="tabler:calendar"></iconify-icon>
+
                             </span>
 
                         </div>
@@ -1323,15 +1547,21 @@
                         <div class="card-header">
 
                             <div>
-                                <h2>Orçamento</h2>
+
+                                <h2>
+                                    Orçamento
+                                </h2>
 
                                 <span>
                                     Defina os limites das categorias.
                                 </span>
+
                             </div>
 
                             <span class="settings-icon">
-                                🎯
+
+                                <iconify-icon icon="tabler:target"></iconify-icon>
+
                             </span>
 
                         </div>
@@ -1387,7 +1617,11 @@
                             id="saveSettingsBtn"
                             class="primary"
                             type="button">
+
+                            <iconify-icon icon="tabler:device-floppy"></iconify-icon>
+
                             Salvar configurações
+
                         </button>
 
                     </article>
@@ -1400,15 +1634,21 @@
                         <div class="card-header">
 
                             <div>
-                                <h2>Sua conta</h2>
+
+                                <h2>
+                                    Sua conta
+                                </h2>
 
                                 <span id="settingsAccountEmail">
                                     —
                                 </span>
+
                             </div>
 
                             <span class="settings-icon">
-                                👤
+
+                                <iconify-icon icon="tabler:user"></iconify-icon>
+
                             </span>
 
                         </div>
@@ -1418,7 +1658,11 @@
                             id="logoutBtn"
                             class="danger-button"
                             type="button">
-                            🚪 Sair da conta
+
+                            <iconify-icon icon="tabler:logout"></iconify-icon>
+
+                            Sair da conta
+
                         </button>
 
                     </article>
@@ -1443,7 +1687,9 @@
         <div class="modal auth-modal">
 
             <div class="auth-logo">
-                💰
+
+                <iconify-icon icon="tabler:home-dollar"></iconify-icon>
+
             </div>
 
             <h2 id="authTitle">
@@ -1496,13 +1742,21 @@
                         class="secondary"
                         type="button"
                         id="registerBtn">
+
+                        <iconify-icon icon="tabler:user-plus"></iconify-icon>
+
                         Criar conta
+
                     </button>
 
                     <button
                         class="primary"
                         type="submit">
+
+                        <iconify-icon icon="tabler:login-2"></iconify-icon>
+
                         Entrar
+
                     </button>
 
                 </div>
@@ -1514,7 +1768,9 @@
                 class="link-button"
                 id="forgotPasswordBtn"
                 type="button">
+
                 Esqueci minha senha
+
             </button>
 
         </div>
@@ -1533,10 +1789,14 @@
         <div class="modal">
 
             <div class="modal-icon">
-                🔐
+
+                <iconify-icon icon="tabler:lock-open"></iconify-icon>
+
             </div>
 
-            <h2>Nova senha</h2>
+            <h2>
+                Nova senha
+            </h2>
 
             <p>
                 Digite uma nova senha para sua conta.
@@ -1582,7 +1842,11 @@
                 <button
                     class="primary full-width"
                     type="submit">
+
+                    <iconify-icon icon="tabler:device-floppy"></iconify-icon>
+
                     Definir nova senha
+
                 </button>
 
             </form>
@@ -1603,10 +1867,14 @@
         <div class="modal">
 
             <div class="modal-icon">
-                📅
+
+                <iconify-icon icon="tabler:calendar"></iconify-icon>
+
             </div>
 
-            <h2>Ciclo atual</h2>
+            <h2>
+                Ciclo atual
+            </h2>
 
             <p id="cycleModalText">
                 —
@@ -1619,7 +1887,9 @@
                     id="closeCycleModalBtn"
                     class="primary"
                     type="button">
+
                     Fechar
+
                 </button>
 
             </div>
@@ -1640,7 +1910,9 @@
         <div class="modal">
 
             <div class="modal-icon">
-                ⚠️
+
+                <iconify-icon icon="tabler:alert-triangle"></iconify-icon>
+
             </div>
 
             <h2 id="confirmTitle">
@@ -1658,14 +1930,20 @@
                     id="confirmCancelBtn"
                     class="secondary"
                     type="button">
+
                     Cancelar
+
                 </button>
 
                 <button
                     id="confirmOkBtn"
                     class="danger-button"
                     type="button">
+
+                    <iconify-icon icon="tabler:check"></iconify-icon>
+
                     Confirmar
+
                 </button>
 
             </div>
@@ -1683,7 +1961,11 @@
         id="toast"
         class="toast">
 
-        <span id="toastIcon">✓</span>
+        <span id="toastIcon">
+
+            <iconify-icon icon="tabler:check"></iconify-icon>
+
+        </span>
 
         <span id="toastMessage">
             Operação realizada.
